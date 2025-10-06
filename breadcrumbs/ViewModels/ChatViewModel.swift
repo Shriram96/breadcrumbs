@@ -200,9 +200,9 @@ class ChatViewModel: ObservableObject {
         return finalResponse
     }
 
-    /// Format messages for display (excluding system messages)
+    /// Format messages for display (excluding system messages only)
     func displayMessages() -> [ChatMessage] {
-        let filtered = messages.filter { $0.role != .system && $0.role != .tool }
+        let filtered = messages.filter { $0.role != .system }
         Logger.chat("Display messages: \(filtered.count) out of \(messages.count) total messages")
         for message in messages {
             Logger.chat("  - Message role: \(message.role), ID: \(message.id), ToolCallId: \(message.toolCallId ?? "nil")")

@@ -8,6 +8,7 @@
 import Foundation
 import Network
 import SystemConfiguration
+import NetworkExtension
 
 // MARK: - Input/Output Models
 
@@ -35,6 +36,8 @@ struct VPNDetectorOutput: ToolOutput {
     let vpnType: String?
     let interfaceName: String?
     let ipAddress: String?
+    let connectionStatus: String?
+    let connectedDate: Date?
     let timestamp: Date
 
     func toFormattedString() -> String {
@@ -42,6 +45,9 @@ struct VPNDetectorOutput: ToolOutput {
         result += "- Connected: \(isConnected ? "YES" : "NO")\n"
 
         if isConnected {
+            if let status = connectionStatus {
+                result += "- Status: \(status)\n"
+            }
             if let type = vpnType {
                 result += "- VPN Type: \(type)\n"
             }
@@ -50,6 +56,12 @@ struct VPNDetectorOutput: ToolOutput {
             }
             if let ip = ipAddress {
                 result += "- IP Address: \(ip)\n"
+            }
+            if let connectedDate = connectedDate {
+                let formatter = DateFormatter()
+                formatter.dateStyle = .medium
+                formatter.timeStyle = .medium
+                result += "- Connected Since: \(formatter.string(from: connectedDate))\n"
             }
         }
 
@@ -112,17 +124,214 @@ struct VPNDetectorTool: AITool {
     private func detectVPN(interfaceName: String? = nil) async throws -> VPNDetectorOutput {
         Logger.tools("VPNDetectorTool.detectVPN: Starting detection for interface: \(interfaceName ?? "all")")
         
+        // Method 1: Check Personal VPN connections using NEVPNManager
+        let personalVPNResult = await checkPersonalVPNConnections(interfaceName: interfaceName)
+        if personalVPNResult.isConnected {
+            Logger.tools("VPNDetectorTool.detectVPN: Found active Personal VPN connection")
+            return personalVPNResult
+        }
+        
+        // Method 2: Check Tunnel Provider VPN connections
+        let tunnelVPNResult = await checkTunnelProviderConnections(interfaceName: interfaceName)
+        if tunnelVPNResult.isConnected {
+            Logger.tools("VPNDetectorTool.detectVPN: Found active Tunnel Provider VPN connection")
+            return tunnelVPNResult
+        }
+        
+        // Method 3: Fallback to interface-based detection for third-party VPNs
+        let interfaceResult = checkVPNInterfaces(interfaceName: interfaceName)
+        if interfaceResult.isConnected {
+            Logger.tools("VPNDetectorTool.detectVPN: Found VPN interface (third-party VPN)")
+            return interfaceResult
+        }
+        
+        // Method 4: Check SystemConfiguration for VPN services
+        let systemConfigResult = checkSystemConfigurationVPN(interfaceName: interfaceName)
+        if systemConfigResult.isConnected {
+            Logger.tools("VPNDetectorTool.detectVPN: Found VPN via SystemConfiguration")
+            return systemConfigResult
+        }
+        
+        // No VPN connection found
+        let result = VPNDetectorOutput(
+            isConnected: false,
+            vpnType: nil,
+            interfaceName: nil,
+            ipAddress: nil,
+            connectionStatus: "Disconnected",
+            connectedDate: nil,
+            timestamp: Date()
+        )
+        
+        Logger.tools("VPNDetectorTool.detectVPN: No VPN connection found")
+        return result
+    }
+
+    // MARK: - VPN Detection Methods
+    
+    /// Check Personal VPN connections using NEVPNManager
+    private func checkPersonalVPNConnections(interfaceName: String?) async -> VPNDetectorOutput {
+        Logger.tools("VPNDetectorTool.checkPersonalVPNConnections: Checking Personal VPN connections")
+        
+        return await withCheckedContinuation { continuation in
+            NEVPNManager.shared().loadFromPreferences { error in
+                if let error = error {
+                    Logger.tools("VPNDetectorTool.checkPersonalVPNConnections: Error loading VPN preferences: \(error.localizedDescription)")
+                    continuation.resume(returning: VPNDetectorOutput(
+                        isConnected: false,
+                        vpnType: nil,
+                        interfaceName: nil,
+                        ipAddress: nil,
+                        connectionStatus: "Error loading preferences",
+                        connectedDate: nil,
+                        timestamp: Date()
+                    ))
+                    return
+                }
+                
+                let connection = NEVPNManager.shared().connection
+                let status = connection.status
+                let isConnected = (status == .connected)
+                
+                Logger.tools("VPNDetectorTool.checkPersonalVPNConnections: VPN status: \(status.rawValue), connected: \(isConnected)")
+                
+                var vpnType: String?
+                var detectedInterface: String?
+                var ipAddress: String?
+                var connectionStatus: String?
+                var connectedDate: Date?
+                
+                if isConnected {
+                    connectionStatus = "Connected"
+                    connectedDate = connection.connectedDate
+                    
+                    // Determine VPN type from protocol
+                    if let vpnProtocol = NEVPNManager.shared().protocolConfiguration {
+                        if vpnProtocol is NEVPNProtocolIKEv2 {
+                            vpnType = "IKEv2"
+                        } else if vpnProtocol is NEVPNProtocolIPSec {
+                            vpnType = "IPSec"
+                        } else {
+                            vpnType = "Personal VPN"
+                        }
+                    }
+                    
+                    // Get interface and IP information
+                    if let interface = interfaceName {
+                        detectedInterface = interface
+                        ipAddress = self.getIPAddress(for: interface)
+                    } else {
+                        // Find the VPN interface
+                        let vpnInterfaces = self.getVPNInterfaces()
+                        if let firstInterface = vpnInterfaces.first {
+                            detectedInterface = firstInterface
+                            ipAddress = self.getIPAddress(for: firstInterface)
+                        }
+                    }
+                } else {
+                    connectionStatus = self.statusToString(status)
+                }
+                
+                let result = VPNDetectorOutput(
+                    isConnected: isConnected,
+                    vpnType: vpnType,
+                    interfaceName: detectedInterface,
+                    ipAddress: ipAddress,
+                    connectionStatus: connectionStatus,
+                    connectedDate: connectedDate,
+                    timestamp: Date()
+                )
+                
+                continuation.resume(returning: result)
+            }
+        }
+    }
+    
+    /// Check Tunnel Provider VPN connections
+    private func checkTunnelProviderConnections(interfaceName: String?) async -> VPNDetectorOutput {
+        Logger.tools("VPNDetectorTool.checkTunnelProviderConnections: Checking Tunnel Provider connections")
+        
+        // Load all tunnel provider managers
+        return await withCheckedContinuation { continuation in
+            NETunnelProviderManager.loadAllFromPreferences { managers, error in
+                if let error = error {
+                    Logger.tools("VPNDetectorTool.checkTunnelProviderConnections: Error loading tunnel providers: \(error.localizedDescription)")
+                    continuation.resume(returning: VPNDetectorOutput(
+                        isConnected: false,
+                        vpnType: nil,
+                        interfaceName: nil,
+                        ipAddress: nil,
+                        connectionStatus: "Error loading tunnel providers",
+                        connectedDate: nil,
+                        timestamp: Date()
+                    ))
+                    return
+                }
+                
+                var isConnected = false
+                var vpnType: String?
+                var detectedInterface: String?
+                var ipAddress: String?
+                var connectionStatus: String?
+                var connectedDate: Date?
+                
+                for manager in managers ?? [] {
+                    let connection = manager.connection
+                    let status = connection.status
+                    
+                    if status == .connected {
+                        isConnected = true
+                        connectionStatus = "Connected"
+                        connectedDate = connection.connectedDate
+                        vpnType = "Tunnel Provider"
+                        
+                        // Get interface and IP information
+                        if let interface = interfaceName {
+                            detectedInterface = interface
+                            ipAddress = self.getIPAddress(for: interface)
+                        } else {
+                            let vpnInterfaces = self.getVPNInterfaces()
+                            if let firstInterface = vpnInterfaces.first {
+                                detectedInterface = firstInterface
+                                ipAddress = self.getIPAddress(for: firstInterface)
+                            }
+                        }
+                        break
+                    }
+                }
+                
+                if !isConnected {
+                    connectionStatus = "No active tunnel connections"
+                }
+                
+                let result = VPNDetectorOutput(
+                    isConnected: isConnected,
+                    vpnType: vpnType,
+                    interfaceName: detectedInterface,
+                    ipAddress: ipAddress,
+                    connectionStatus: connectionStatus,
+                    connectedDate: connectedDate,
+                    timestamp: Date()
+                )
+                
+                continuation.resume(returning: result)
+            }
+        }
+    }
+    
+    /// Check VPN interfaces (fallback for third-party VPNs)
+    private func checkVPNInterfaces(interfaceName: String?) -> VPNDetectorOutput {
+        Logger.tools("VPNDetectorTool.checkVPNInterfaces: Checking VPN interfaces")
+        
+        let vpnInterfaces = getVPNInterfaces()
+        Logger.tools("VPNDetectorTool.checkVPNInterfaces: Found \(vpnInterfaces.count) VPN interfaces: \(vpnInterfaces)")
+        
         var isConnected = false
         var vpnType: String?
         var detectedInterface: String?
         var ipAddress: String?
-
-        // Method 1: Check for VPN interfaces (utun, ppp, tap, tun)
-        let vpnInterfaces = getVPNInterfaces()
-        Logger.tools("VPNDetectorTool.detectVPN: Found \(vpnInterfaces.count) VPN interfaces: \(vpnInterfaces)")
-
+        
         if let specificInterface = interfaceName {
-            // Check specific interface
             if vpnInterfaces.contains(specificInterface) {
                 isConnected = true
                 detectedInterface = specificInterface
@@ -130,7 +339,6 @@ struct VPNDetectorTool: AITool {
                 ipAddress = getIPAddress(for: specificInterface)
             }
         } else {
-            // Check all VPN interfaces
             if let firstVPNInterface = vpnInterfaces.first {
                 isConnected = true
                 detectedInterface = firstVPNInterface
@@ -138,25 +346,18 @@ struct VPNDetectorTool: AITool {
                 ipAddress = getIPAddress(for: firstVPNInterface)
             }
         }
-
-        // Method 2: Check SystemConfiguration for VPN services
-        if !isConnected {
-            isConnected = checkSystemConfigurationVPN()
-            Logger.tools("VPNDetectorTool.detectVPN: SystemConfiguration check result: \(isConnected)")
-        }
-
-        let result = VPNDetectorOutput(
+        
+        return VPNDetectorOutput(
             isConnected: isConnected,
             vpnType: vpnType,
             interfaceName: detectedInterface,
             ipAddress: ipAddress,
+            connectionStatus: isConnected ? "Interface Active" : "No VPN Interface",
+            connectedDate: nil,
             timestamp: Date()
         )
-        
-        Logger.tools("VPNDetectorTool.detectVPN: Final result - isConnected: \(result.isConnected), type: \(result.vpnType ?? "nil"), interface: \(result.interfaceName ?? "nil")")
-        return result
     }
-
+    
     /// Get list of active VPN-related network interfaces
     private func getVPNInterfaces() -> [String] {
         var interfaces: [String] = []
@@ -189,6 +390,26 @@ struct VPNDetectorTool: AITool {
         }
 
         return interfaces
+    }
+    
+    /// Convert NEVPNStatus to string
+    private func statusToString(_ status: NEVPNStatus) -> String {
+        switch status {
+        case .invalid:
+            return "Invalid"
+        case .disconnected:
+            return "Disconnected"
+        case .connecting:
+            return "Connecting"
+        case .connected:
+            return "Connected"
+        case .reasserting:
+            return "Reasserting"
+        case .disconnecting:
+            return "Disconnecting"
+        @unknown default:
+            return "Unknown"
+        }
     }
 
     /// Determine VPN type based on interface name
@@ -238,20 +459,38 @@ struct VPNDetectorTool: AITool {
 
     /// Check VPN status using SystemConfiguration framework
     /// This method may fail if app is sandboxed without proper entitlements
-    private func checkSystemConfigurationVPN() -> Bool {
+    private func checkSystemConfigurationVPN(interfaceName: String?) -> VPNDetectorOutput {
+        Logger.tools("VPNDetectorTool.checkSystemConfigurationVPN: Checking SystemConfiguration VPN services")
+        
         // Note: This requires access to SystemConfiguration which may be restricted in sandbox
         // The app should be running with proper entitlements or without strict sandbox
 
         // Try to create preferences - will fail if sandboxed
         guard let prefs = SCPreferencesCreate(nil, "VPNDetector" as CFString, nil) else {
             // Sandbox restriction - return false and rely on interface detection
-            print("VPNDetector: Cannot access SystemConfiguration (sandbox restriction)")
-            return false
+            Logger.tools("VPNDetectorTool.checkSystemConfigurationVPN: Cannot access SystemConfiguration (sandbox restriction)")
+            return VPNDetectorOutput(
+                isConnected: false,
+                vpnType: nil,
+                interfaceName: nil,
+                ipAddress: nil,
+                connectionStatus: "Sandbox restriction",
+                connectedDate: nil,
+                timestamp: Date()
+            )
         }
 
         guard let services = SCPreferencesGetValue(prefs, "NetworkServices" as CFString) as? NSDictionary else {
-            print("VPNDetector: Cannot read network services")
-            return false
+            Logger.tools("VPNDetectorTool.checkSystemConfigurationVPN: Cannot read network services")
+            return VPNDetectorOutput(
+                isConnected: false,
+                vpnType: nil,
+                interfaceName: nil,
+                ipAddress: nil,
+                connectionStatus: "Cannot read network services",
+                connectedDate: nil,
+                timestamp: Date()
+            )
         }
 
         for (_, value) in services {
@@ -265,12 +504,45 @@ struct VPNDetectorTool: AITool {
                     }
                     let key = "State:/Network/Service/\(serviceID)/IPv4" as CFString
                     if let _ = SCDynamicStoreCopyValue(dynamicStore, key) {
-                        return true
+                        Logger.tools("VPNDetectorTool.checkSystemConfigurationVPN: Found active VPN service: \(serviceID)")
+                        
+                        // Get interface and IP information
+                        var detectedInterface: String?
+                        var ipAddress: String?
+                        
+                        if let interface = interfaceName {
+                            detectedInterface = interface
+                            ipAddress = getIPAddress(for: interface)
+                        } else {
+                            let vpnInterfaces = getVPNInterfaces()
+                            if let firstInterface = vpnInterfaces.first {
+                                detectedInterface = firstInterface
+                                ipAddress = getIPAddress(for: firstInterface)
+                            }
+                        }
+                        
+                        return VPNDetectorOutput(
+                            isConnected: true,
+                            vpnType: "System VPN",
+                            interfaceName: detectedInterface,
+                            ipAddress: ipAddress,
+                            connectionStatus: "Connected via SystemConfiguration",
+                            connectedDate: nil,
+                            timestamp: Date()
+                        )
                     }
                 }
             }
         }
 
-        return false
+        return VPNDetectorOutput(
+            isConnected: false,
+            vpnType: nil,
+            interfaceName: nil,
+            ipAddress: nil,
+            connectionStatus: "No active VPN services",
+            connectedDate: nil,
+            timestamp: Date()
+        )
     }
 }

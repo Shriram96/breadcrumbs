@@ -6,10 +6,13 @@
 //
 
 import SwiftUI
+import Foundation
 
 struct ChatView: View {
     @StateObject private var viewModel: ChatViewModel
     @FocusState private var isInputFocused: Bool
+    @State private var cachedMessageGroups: [MessageGroup] = []
+    @State private var lastMessageCount: Int = 0
 
     init(apiKey: String) {
         let model = OpenAIModel(apiToken: apiKey, model: "gpt-4o")
@@ -27,7 +30,7 @@ struct ChatView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 12) {
-                        ForEach(groupedMessages()) { group in
+                        ForEach(cachedMessageGroups) { group in
                             MessageGroupView(group: group)
                                 .id(group.id)
                         }
@@ -47,7 +50,8 @@ struct ChatView: View {
                     .padding()
                 }
                 .onChange(of: viewModel.messages.count) { _ in
-                    if let lastGroup = groupedMessages().last {
+                    updateCachedMessageGroups()
+                    if let lastGroup = cachedMessageGroups.last {
                         withAnimation {
                             proxy.scrollTo(lastGroup.id, anchor: .bottom)
                         }
@@ -66,6 +70,9 @@ struct ChatView: View {
             inputArea
         }
         .background(Color(nsColor: .windowBackgroundColor))
+        .onAppear {
+            updateCachedMessageGroups()
+        }
     }
 
     // MARK: - Subviews
@@ -129,12 +136,20 @@ struct ChatView: View {
     
     // MARK: - Message Grouping
     
-    private func groupedMessages() -> [MessageGroup] {
+    private func updateCachedMessageGroups() {
+        // Only update if message count has changed
+        if viewModel.messages.count != lastMessageCount {
+            cachedMessageGroups = computeGroupedMessages()
+            lastMessageCount = viewModel.messages.count
+        }
+    }
+    
+    private func computeGroupedMessages() -> [MessageGroup] {
         let displayMessages = viewModel.displayMessages()
         var groups: [MessageGroup] = []
         var i = 0
         
-        Logger.ui("Starting message grouping with \(displayMessages.count) messages")
+        Logger.ui("Computing grouped messages from \(displayMessages.count) display messages")
         
         while i < displayMessages.count {
             let message = displayMessages[i]
@@ -142,9 +157,6 @@ struct ChatView: View {
             // Check if this is an assistant message with tool calls
             if message.role == .assistant, let toolCalls = message.toolCalls, !toolCalls.isEmpty {
                 Logger.ui("Found assistant message with \(toolCalls.count) tool calls")
-                for toolCall in toolCalls {
-                    Logger.ui("  - Tool call: \(toolCall.name), ID: \(toolCall.id)")
-                }
                 
                 // Collect tool results that follow
                 var toolResults: [ChatMessage] = []
@@ -153,11 +165,11 @@ struct ChatView: View {
                 while j < displayMessages.count && displayMessages[j].role == .tool {
                     let toolResult = displayMessages[j]
                     toolResults.append(toolResult)
-                    Logger.ui("  - Tool result: ID: \(toolResult.toolCallId ?? "nil"), Content: \(toolResult.content.prefix(50))...")
+                    Logger.ui("Found tool result: ID=\(toolResult.toolCallId ?? "nil"), Content=\(toolResult.content.prefix(50))...")
                     j += 1
                 }
                 
-                Logger.ui("Collected \(toolResults.count) tool results")
+                Logger.ui("Collected \(toolResults.count) tool results for \(toolCalls.count) tool calls")
                 
                 // Find the final assistant response (if any)
                 var finalResponse: ChatMessage? = nil
@@ -322,29 +334,47 @@ struct ToolUsageDetails: View {
                             .cornerRadius(6)
                     } else {
                         // No result found for this tool call
-                        Text("No result available")
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                            .italic()
-                            .padding(8)
-                            .background(Color.orange.opacity(0.1))
-                            .cornerRadius(6)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("No result available")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                                .italic()
+                                .padding(8)
+                                .background(Color.orange.opacity(0.1))
+                                .cornerRadius(6)
+                            
+                            // Debug info
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Debug Info:")
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                                Text("Tool Call ID: \(toolCall.id)")
+                                    .font(.caption2)
+                                Text("Available Results: \(toolResults.count)")
+                                    .font(.caption2)
+                                ForEach(toolResults, id: \.id) { result in
+                                    Text("  - Result ID: \(result.toolCallId ?? "nil")")
+                                        .font(.caption2)
+                                }
+                            }
+                            .padding(4)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(4)
+                        }
                     }
                 }
                 .padding(.horizontal, 12)
-                .onAppear {
-                    // Debug logging
-                    Logger.ui("Tool call: \(toolCall.name), ID: \(toolCall.id)")
-                    Logger.ui("Available tool results: \(toolResults.count)")
-                    for result in toolResults {
-                        Logger.ui("  - Result ID: \(result.toolCallId ?? "nil"), Content: \(result.content.prefix(50))...")
-                    }
-                }
             }
         }
         .padding(.vertical, 4)
         .onAppear {
-            Logger.ui("ToolUsageDetails appeared with \(toolCalls.count) tool calls and \(toolResults.count) tool results")
+            Logger.ui("ToolUsageDetails: \(toolCalls.count) tool calls, \(toolResults.count) tool results")
+            for toolCall in toolCalls {
+                Logger.ui("  - Tool Call: \(toolCall.name), ID: \(toolCall.id)")
+            }
+            for toolResult in toolResults {
+                Logger.ui("  - Tool Result: ID: \(toolResult.toolCallId ?? "nil"), Content: \(toolResult.content.prefix(50))...")
+            }
         }
     }
 }
