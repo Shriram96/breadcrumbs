@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Service identification -->
+    <key>Label</key>
+    <string>com.breadcrumbs.server</string>
+    
+    <!-- Program to run -->
+    <key>Program</key>
+    <string>/Applications/breadcrumbs.app/Contents/MacOS/breadcrumbs</string>
+    
+    <!-- Program arguments -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Applications/breadcrumbs.app/Contents/MacOS/breadcrumbs</string>
+        <string>--server-mode</string>
+        <string>--port</string>
+        <string>8181</string>
+        <string>--api-key</string>
+        <string>demo-key-123</string>
+    </array>
+    
+    <!-- Run at load time -->
+    <key>RunAtLoad</key>
+    <true/>
+    
+    <!-- Keep the service running -->
+    <key>KeepAlive</key>
+    <true/>
+    
+    <!-- Standard output and error -->
+    <key>StandardOutPath</key>
+    <string>/tmp/breadcrumbs-server.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/breadcrumbs-server-error.log</string>
+    
+    <!-- Environment variables -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>BREADCRUMBS_SERVER_MODE</key>
+        <string>1</string>
+        <key>BREADCRUMBS_PORT</key>
+        <string>8181</string>
+        <key>BREADCRUMBS_API_KEY</key>
+        <string>demo-key-123</string>
+    </dict>
+    
+    <!-- Process type -->
+    <key>ProcessType</key>
+    <string>Background</string>
+    
+    <!-- Nice level (lower priority) -->
+    <key>Nice</key>
+    <integer>1</integer>
+    
+    <!-- Limit resources -->
+    <key>SoftResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>1024</integer>
+        <key>NumberOfProcesses</key>
+        <integer>50</integer>
+    </dict>
+    
+    <!-- Network access -->
+    <key>NetworkState</key>
+    <true/>
+    
+    <!-- Restart on crash -->
+    <key>RestartOnCrash</key>
+    <true/>
+    
+    <!-- Throttle interval for restart -->
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+</dict>
+</plist>
+
