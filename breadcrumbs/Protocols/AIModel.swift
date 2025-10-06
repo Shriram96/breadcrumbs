@@ -33,7 +33,7 @@
 import Foundation
 
 /// Represents a message in the chat conversation
-struct ChatMessage: Identifiable, Codable, Sendable {
+struct ChatMessage: Identifiable, Codable, Sendable, Equatable {
     let id: UUID
     let role: MessageRole
     let content: String
@@ -70,7 +70,7 @@ enum MessageRole: String, Codable, Sendable {
 }
 
 /// Represents a tool call request from the AI
-struct ToolCall: Identifiable, Codable, Sendable {
+struct ToolCall: Identifiable, Codable, Sendable, Equatable {
     let id: String
     let name: String
     let arguments: String // JSON string of arguments

@@ -13,7 +13,17 @@ struct ContentView: View {
     @State private var isAuthenticating = false
     @State private var authenticationError: String?
 
-    private let keychain = KeychainHelper.shared
+    private let keychain: KeychainProtocol
+    
+    // Default initializer for production use
+    init() {
+        self.keychain = KeychainHelper.shared
+    }
+    
+    // Test initializer for dependency injection
+    init(keychain: KeychainProtocol) {
+        self.keychain = keychain
+    }
 
     var body: some View {
         VStack {

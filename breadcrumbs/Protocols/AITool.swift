@@ -123,6 +123,11 @@ class ToolRegistry: ObservableObject {
         // Register default tools
         registerDefaultTools()
     }
+    
+    // Public initializer for testing
+    init(forTesting: Bool) {
+        // Don't register default tools for testing
+    }
 
     /// Register a tool in the registry
     func register(_ tool: AITool) {
