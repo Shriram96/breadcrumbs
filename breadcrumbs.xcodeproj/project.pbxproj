@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		2892650E2E938603006A01CF /* OpenAI in Frameworks */ = {isa = PBXBuildFile; productRef = 289264C32E937F2C006A01CF /* OpenAI */; };
+		28EBC1DE2E93C65F0029AB91 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 28ARGP0032FFAA00000000005 /* ArgumentParser */; };
+		28VPR0012FFAA00000000001 /* Vapor in Frameworks */ = {isa = PBXBuildFile; productRef = 28VPR0032FFAA00000000003 /* Vapor */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,7 +58,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				28EBC1DE2E93C65F0029AB91 /* ArgumentParser in Frameworks */,
 				2892650E2E938603006A01CF /* OpenAI in Frameworks */,
+				28VPR0012FFAA00000000001 /* Vapor in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -118,6 +122,8 @@
 			name = breadcrumbs;
 			packageProductDependencies = (
 				289264C32E937F2C006A01CF /* OpenAI */,
+				28VPR0032FFAA00000000003 /* Vapor */,
+				28ARGP0032FFAA00000000005 /* ArgumentParser */,
 			);
 			productName = breadcrumbs;
 			productReference = 289264962E937F28006A01CF /* breadcrumbs.app */;
@@ -203,6 +209,8 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				289264C22E937F2C006A01CF /* XCRemoteSwiftPackageReference "OpenAI" */,
+				28VPR0022FFAA00000000002 /* XCRemoteSwiftPackageReference "vapor" */,
+				28ARGP0022FFAA00000000004 /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 289264972E937F28006A01CF /* Products */;
@@ -336,7 +344,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG UNIT_TESTING $(inherited)";
+                SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -582,6 +590,22 @@
 				minimumVersion = 0.3.0;
 			};
 		};
+		28ARGP0022FFAA00000000004 /* XCRemoteSwiftPackageReference "swift-argument-parser" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-argument-parser";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.4.0;
+			};
+		};
+		28VPR0022FFAA00000000002 /* XCRemoteSwiftPackageReference "vapor" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/vapor/vapor";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -589,6 +613,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 289264C22E937F2C006A01CF /* XCRemoteSwiftPackageReference "OpenAI" */;
 			productName = OpenAI;
+		};
+		28ARGP0032FFAA00000000005 /* ArgumentParser */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 28ARGP0022FFAA00000000004 /* XCRemoteSwiftPackageReference "swift-argument-parser" */;
+			productName = ArgumentParser;
+		};
+		28VPR0032FFAA00000000003 /* Vapor */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 28VPR0022FFAA00000000002 /* XCRemoteSwiftPackageReference "vapor" */;
+			productName = Vapor;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

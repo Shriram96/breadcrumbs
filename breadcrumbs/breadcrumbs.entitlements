@@ -6,9 +6,9 @@
 	<key>com.apple.security.network.client</key>
 	<true/>
 
-	<!-- Allow reading network configuration -->
+	<!-- Allow incoming network connections (for HTTP server) -->
 	<key>com.apple.security.network.server</key>
-	<false/>
+	<true/>
 
 	<!-- Allow reading system preferences -->
 	<key>com.apple.security.files.user-selected.read-only</key>
