@@ -8,6 +8,42 @@
 import XCTest
 @testable import breadcrumbs
 
+/// Simple mock that only implements sendMessage (not streamMessage) to test default implementation
+final class SimpleMockAIModel: AIModel {
+    let providerId: String = "simple-mock"
+    let displayName: String = "Simple Mock AI Model"
+    let supportsTools: Bool = true
+    
+    var shouldThrowError: Bool = false
+    var mockError: Error = AIModelError.invalidResponse
+    var mockResponse: ChatMessage?
+    
+    func sendMessage(messages: [ChatMessage], tools: [AITool]?) async throws -> ChatMessage {
+        if shouldThrowError {
+            throw mockError
+        }
+        
+        if let response = mockResponse {
+            return response
+        }
+        
+        return ChatMessage(
+            role: .assistant,
+            content: "Simple mock response for \(messages.count) messages"
+        )
+    }
+    
+    func configureSuccessResponse(_ response: ChatMessage) {
+        shouldThrowError = false
+        mockResponse = response
+    }
+    
+    func configureError(_ error: Error) {
+        shouldThrowError = true
+        mockError = error
+    }
+}
+
 final class AIModelTests: XCTestCase {
     
     // MARK: - AIModel Protocol Tests
@@ -134,8 +170,8 @@ final class AIModelTests: XCTestCase {
         let messages = [
             ChatMessage(role: .user, content: "Test default stream")
         ]
-        let expectedResponse = ChatMessage(role: .assistant, content: "Default stream response")
-        mockModel.configureSuccessResponse(expectedResponse)
+        let expectedChunks = ["Default stream response"]
+        mockModel.configureStreamChunks(expectedChunks)
         
         // When
         let stream = try await mockModel.streamMessage(messages: messages, tools: nil)
@@ -148,6 +184,28 @@ final class AIModelTests: XCTestCase {
         // Then
         XCTAssertEqual(receivedChunks.count, 1)
         XCTAssertEqual(receivedChunks.first, "Default stream response")
+    }
+    
+    @MainActor func testAIModelDefaultStreamFallbackToSendMessage() async throws {
+        // Given - Create a simple mock that only implements sendMessage (not streamMessage)
+        let mockModel = SimpleMockAIModel()
+        let messages = [
+            ChatMessage(role: .user, content: "Test fallback stream")
+        ]
+        let expectedResponse = ChatMessage(role: .assistant, content: "Fallback stream response")
+        mockModel.configureSuccessResponse(expectedResponse)
+        
+        // When - Call streamMessage (should use default implementation that calls sendMessage)
+        let stream = try await mockModel.streamMessage(messages: messages, tools: nil)
+        var receivedChunks: [String] = []
+        
+        for try await chunk in stream {
+            receivedChunks.append(chunk)
+        }
+        
+        // Then - Should get the response content as a single chunk
+        XCTAssertEqual(receivedChunks.count, 1)
+        XCTAssertEqual(receivedChunks.first, "Fallback stream response")
     }
     
     // MARK: - AIModelError Tests
