@@ -22,6 +22,7 @@ final class MockAIModel: AIModel {
     var shouldThrowError: Bool = false
     var mockError: Error = AIModelError.invalidResponse
     var mockResponse: ChatMessage?
+    var mockResponses: [ChatMessage] = [] // Support multiple responses for different calls
     var mockStreamChunks: [String] = []
     var sendMessageCallCount: Int = 0
     var streamMessageCallCount: Int = 0
@@ -42,11 +43,25 @@ final class MockAIModel: AIModel {
             throw mockError
         }
         
+        // Use multiple responses if available, otherwise fall back to single response
+        if !mockResponses.isEmpty {
+            let responseIndex = min(sendMessageCallCount - 1, mockResponses.count - 1)
+            return mockResponses[responseIndex]
+        }
+        
         if let response = mockResponse {
             return response
         }
         
-        // Default mock response
+        // Default mock response - ensure no tool calls to prevent infinite loops
+        // If tools are nil (follow-up call), return a simple response without tool calls
+        if tools == nil {
+            return ChatMessage(
+                role: .assistant,
+                content: "Final response after tool execution"
+            )
+        }
+        
         return ChatMessage(
             role: .assistant,
             content: "Mock response for \(messages.count) messages"
@@ -84,6 +99,7 @@ final class MockAIModel: AIModel {
         shouldThrowError = false
         mockError = AIModelError.invalidResponse
         mockResponse = nil
+        mockResponses = []
         mockStreamChunks = []
         sendMessageCallCount = 0
         streamMessageCallCount = 0
@@ -94,6 +110,13 @@ final class MockAIModel: AIModel {
     func configureSuccessResponse(_ response: ChatMessage) {
         shouldThrowError = false
         mockResponse = response
+        mockResponses = []
+    }
+    
+    func configureMultipleResponses(_ responses: [ChatMessage]) {
+        shouldThrowError = false
+        mockResponse = nil
+        mockResponses = responses
     }
     
     func configureError(_ error: Error) {

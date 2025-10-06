@@ -61,7 +61,7 @@ class ChatViewModel: ObservableObject {
 
     /// Send a user message and get AI response
     func sendMessage(_ content: String) async {
-        guard !content.isEmpty else { return }
+        guard !content.isEmpty && !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
         // Clear any previous errors
         errorMessage = nil

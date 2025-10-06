@@ -16,6 +16,8 @@ final class ChatViewModelTests: XCTestCase {
     var mockAIModel: MockAIModel!
     var mockToolRegistry: MockToolRegistry!
     
+    // MARK: - Helper Methods
+    
     override func setUpWithError() throws {
         mockAIModel = MockAIModel()
         mockToolRegistry = MockToolRegistry(forTesting: true)
@@ -23,9 +25,11 @@ final class ChatViewModelTests: XCTestCase {
     }
     
     override func tearDownWithError() throws {
-        viewModel = nil
-        mockAIModel = nil
-        mockToolRegistry = nil
+        // Reset mock state to prevent issues
+        mockAIModel?.reset()
+        mockToolRegistry?.reset()
+        
+        // Let XCTest handle the cleanup automatically to avoid @MainActor deallocation issues
     }
     
     // MARK: - Initialization Tests
@@ -55,7 +59,13 @@ final class ChatViewModelTests: XCTestCase {
         mockAIModel.configureSuccessResponse(mockResponse)
         
         // When
-        await viewModel.sendMessage(userMessage)
+        do {
+            try await TestUtilities.withTimeout(seconds: 5) { [self] in
+                await viewModel.sendMessage(userMessage)
+            }
+        } catch {
+            XCTFail("Test timed out: \(error)")
+        }
         
         // Then
         XCTAssertEqual(viewModel.messages.count, 3) // system + user + assistant
@@ -75,7 +85,13 @@ final class ChatViewModelTests: XCTestCase {
         let initialMessageCount = viewModel.messages.count
         
         // When
-        await viewModel.sendMessage(emptyMessage)
+        do {
+            try await TestUtilities.withTimeout(seconds: 5) { [self] in
+                await viewModel.sendMessage(emptyMessage)
+            }
+        } catch {
+            XCTFail("Test timed out: \(error)")
+        }
         
         // Then
         XCTAssertEqual(viewModel.messages.count, initialMessageCount)
@@ -88,7 +104,13 @@ final class ChatViewModelTests: XCTestCase {
         let initialMessageCount = viewModel.messages.count
         
         // When
-        await viewModel.sendMessage(whitespaceMessage)
+        do {
+            try await TestUtilities.withTimeout(seconds: 5) { [self] in
+                await viewModel.sendMessage(whitespaceMessage)
+            }
+        } catch {
+            XCTFail("Test timed out: \(error)")
+        }
         
         // Then
         XCTAssertEqual(viewModel.messages.count, initialMessageCount)
@@ -102,7 +124,13 @@ final class ChatViewModelTests: XCTestCase {
         mockAIModel.configureError(mockError)
         
         // When
-        await viewModel.sendMessage(userMessage)
+        do {
+            try await TestUtilities.withTimeout(seconds: 5) { [self] in
+                await viewModel.sendMessage(userMessage)
+            }
+        } catch {
+            XCTFail("Test timed out: \(error)")
+        }
         
         // Then
         XCTAssertEqual(viewModel.messages.count, 3) // system + user + error message
@@ -128,10 +156,21 @@ final class ChatViewModelTests: XCTestCase {
         )
         let finalResponse = ChatMessage(role: .assistant, content: "VPN is connected")
         
-        mockAIModel.configureSuccessResponse(mockResponseWithTools)
+        // Register the required tool
+        let mockTool = MockAITool(name: "vpn_detector", description: "VPN detector tool")
+        mockToolRegistry.register(mockTool)
+        
+        // Configure multiple responses: first call returns tool calls, second call returns final response
+        mockAIModel.configureMultipleResponses([mockResponseWithTools, finalResponse])
         
         // When
-        await viewModel.sendMessage(userMessage)
+        do {
+            try await TestUtilities.withTimeout(seconds: 5) { [self] in
+                await viewModel.sendMessage(userMessage)
+            }
+        } catch {
+            XCTFail("Test timed out: \(error)")
+        }
         
         // Then
         // Should have: system + user + assistant with tools + tool result + final response
@@ -157,12 +196,23 @@ final class ChatViewModelTests: XCTestCase {
         )
         let finalResponse = ChatMessage(role: .assistant, content: "Tool execution failed")
         
-        mockAIModel.configureSuccessResponse(mockResponseWithTools)
+        // Register the required tool
+        let mockTool = MockAITool(name: "vpn_detector", description: "VPN detector tool")
+        mockToolRegistry.register(mockTool)
+        
+        // Configure multiple responses: first call returns tool calls, second call returns final response
+        mockAIModel.configureMultipleResponses([mockResponseWithTools, finalResponse])
         mockToolRegistry.shouldThrowError = true
         mockToolRegistry.mockError = ToolError.executionFailed("Tool failed")
         
         // When
-        await viewModel.sendMessage(userMessage)
+        do {
+            try await TestUtilities.withTimeout(seconds: 5) { [self] in
+                await viewModel.sendMessage(userMessage)
+            }
+        } catch {
+            XCTFail("Test timed out: \(error)")
+        }
         
         // Then
         XCTAssertEqual(viewModel.messages.count, 5)
@@ -181,12 +231,26 @@ final class ChatViewModelTests: XCTestCase {
             content: "",
             toolCalls: [toolCall1, toolCall2]
         )
+        let finalResponse = ChatMessage(role: .assistant, content: "System check complete")
         
-        mockAIModel.configureSuccessResponse(mockResponseWithTools)
+        // Register the required tools
+        let mockTool1 = MockAITool(name: "vpn_detector", description: "VPN detector tool")
+        let mockTool2 = MockAITool(name: "system_check", description: "System check tool")
+        mockToolRegistry.register(mockTool1)
+        mockToolRegistry.register(mockTool2)
+        
+        // Configure multiple responses: first call returns tool calls, second call returns final response
+        mockAIModel.configureMultipleResponses([mockResponseWithTools, finalResponse])
         mockToolRegistry.mockResult = "VPN Status: Connected"
         
         // When
-        await viewModel.sendMessage(userMessage)
+        do {
+            try await TestUtilities.withTimeout(seconds: 5) { [self] in
+                await viewModel.sendMessage(userMessage)
+            }
+        } catch {
+            XCTFail("Test timed out: \(error)")
+        }
         
         // Then
         // Should have: system + user + assistant with tools + 2 tool results + final response
@@ -278,7 +342,13 @@ final class ChatViewModelTests: XCTestCase {
             }
         
         // When
-        await viewModel.sendMessage(userMessage)
+        do {
+            try await TestUtilities.withTimeout(seconds: 5) { [self] in
+                await viewModel.sendMessage(userMessage)
+            }
+        } catch {
+            XCTFail("Test timed out: \(error)")
+        }
         
         // Then
         await fulfillment(of: [expectation], timeout: 1.0)
@@ -294,7 +364,13 @@ final class ChatViewModelTests: XCTestCase {
         mockAIModel.configureSuccessResponse(ChatMessage(role: .assistant, content: "Response"))
         
         // When
-        await viewModel.sendMessage("Test message")
+        do {
+            try await TestUtilities.withTimeout(seconds: 5) { [self] in
+                await viewModel.sendMessage("Test message")
+            }
+        } catch {
+            XCTFail("Test timed out: \(error)")
+        }
         
         // Then
         XCTAssertTrue(viewModel.currentInput.isEmpty)
@@ -308,7 +384,13 @@ final class ChatViewModelTests: XCTestCase {
         mockAIModel.configureSuccessResponse(ChatMessage(role: .assistant, content: "Response"))
         
         // When
-        await viewModel.sendMessage("New message")
+        do {
+            try await TestUtilities.withTimeout(seconds: 5) { [self] in
+                await viewModel.sendMessage("New message")
+            }
+        } catch {
+            XCTFail("Test timed out: \(error)")
+        }
         
         // Then
         XCTAssertNil(viewModel.errorMessage)
@@ -328,11 +410,19 @@ final class ChatViewModelTests: XCTestCase {
             content: "",
             toolCalls: [toolCall]
         )
+        let finalResponse = ChatMessage(role: .assistant, content: "Tool executed successfully")
         
-        mockAIModel.configureSuccessResponse(mockResponseWithTools)
+        // Configure multiple responses: first call returns tool calls, second call returns final response
+        mockAIModel.configureMultipleResponses([mockResponseWithTools, finalResponse])
         
         // When
-        await viewModel.sendMessage(userMessage)
+        do {
+            try await TestUtilities.withTimeout(seconds: 5) { [self] in
+                await viewModel.sendMessage(userMessage)
+            }
+        } catch {
+            XCTFail("Test timed out: \(error)")
+        }
         
         // Then
         XCTAssertEqual(mockToolRegistry.executeToolCallCount, 1)
