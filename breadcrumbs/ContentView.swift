@@ -2,52 +2,127 @@
 //  ContentView.swift
 //  breadcrumbs
 //
-//  Created by Shriram R on 10/5/25.
+//  System Diagnostics Chatbot - Main View
 //
 
 import SwiftUI
-import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @State private var showingSettings = false
+    @State private var apiKey: String?
+
+    private let keychain = KeychainHelper.shared
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
+        VStack {
+            if let key = apiKey, !key.isEmpty {
+                // Show chat interface
+                ChatView(apiKey: key)
+            } else {
+                // Show welcome screen if no API key
+                WelcomeView(showingSettings: $showingSettings)
             }
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-            .toolbar {
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
+        }
+        .sheet(isPresented: $showingSettings, onDismiss: {
+            // Reload API key when settings closes
+            loadAPIKey()
+        }) {
+            SettingsView()
+        }
+        .toolbar {
+            ToolbarItem(placement: .automatic) {
+                Button {
+                    showingSettings = true
+                } label: {
+                    Label("Settings", systemImage: "gear")
                 }
             }
-        } detail: {
-            Text("Select an item")
+        }
+        .onAppear {
+            loadAPIKey()
         }
     }
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
+    private func loadAPIKey() {
+        apiKey = keychain.get(forKey: KeychainHelper.openAIAPIKey)
     }
+}
 
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+// MARK: - Welcome View
+
+struct WelcomeView: View {
+    @Binding var showingSettings: Bool
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "stethoscope")
+                .font(.system(size: 60))
+                .foregroundColor(.accentColor)
+
+            Text("Welcome to System Diagnostics")
+                .font(.title)
+                .fontWeight(.bold)
+
+            Text("Your AI-powered system diagnostic assistant")
+                .font(.title3)
+                .foregroundColor(.secondary)
+
+            VStack(alignment: .leading, spacing: 12) {
+                FeatureRow(
+                    icon: "network",
+                    title: "Network Diagnostics",
+                    description: "Check VPN status and connectivity"
+                )
+                FeatureRow(
+                    icon: "shield.checkered",
+                    title: "Security Analysis",
+                    description: "Analyze system security settings"
+                )
+                FeatureRow(
+                    icon: "cpu",
+                    title: "System Health",
+                    description: "Monitor performance and resources"
+                )
+            }
+            .padding()
+
+            Button {
+                showingSettings = true
+            } label: {
+                HStack {
+                    Image(systemName: "key.fill")
+                    Text("Setup OpenAI API Key")
+                }
+                .padding()
+                .background(Color.accentColor)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+struct FeatureRow: View {
+    let icon: String
+    let title: String
+    let description: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(.accentColor)
+                .frame(width: 30)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.headline)
+                Text(description)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
         }
     }
@@ -55,5 +130,4 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
 }
