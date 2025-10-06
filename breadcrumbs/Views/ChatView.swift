@@ -289,7 +289,7 @@ struct ToolUsageDetails: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            ForEach(Array(zip(toolCalls, toolResults)), id: \.0.id) { toolCall, toolResult in
+            ForEach(toolCalls, id: \.id) { toolCall in
                 VStack(alignment: .leading, spacing: 4) {
                     // Tool call info
                     HStack {
@@ -299,13 +299,25 @@ struct ToolUsageDetails: View {
                         Spacer()
                     }
                     
-                    // Tool result
-                    Text(toolResult.content)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(8)
-                        .background(Color(nsColor: .textBackgroundColor))
-                        .cornerRadius(6)
+                    // Find the corresponding tool result
+                    if let toolResult = toolResults.first(where: { $0.toolCallId == toolCall.id }) {
+                        // Tool result
+                        Text(toolResult.content)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(8)
+                            .background(Color(nsColor: .textBackgroundColor))
+                            .cornerRadius(6)
+                    } else {
+                        // No result found for this tool call
+                        Text("No result available")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                            .italic()
+                            .padding(8)
+                            .background(Color.orange.opacity(0.1))
+                            .cornerRadius(6)
+                    }
                 }
                 .padding(.horizontal, 12)
             }
