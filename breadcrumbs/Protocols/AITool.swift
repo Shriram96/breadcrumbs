@@ -117,7 +117,12 @@ enum ToolError: LocalizedError {
 class ToolRegistry: ObservableObject {
     @Published private(set) var tools: [String: AITool] = [:]
 
-    static let shared = ToolRegistry()
+    nonisolated static let shared: ToolRegistry = {
+        // Create instance on main actor
+        return MainActor.assumeIsolated {
+            ToolRegistry()
+        }
+    }()
 
     private init() {
         // Register default tools
