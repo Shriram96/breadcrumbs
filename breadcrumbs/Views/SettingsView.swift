@@ -16,6 +16,7 @@ struct SettingsView: View {
     @State private var useBiometric: Bool = true
     @State private var isAuthenticating: Bool = false
     @State private var authenticationError: String?
+    @State private var selectedTab: Int = 0
 
     private let keychain: KeychainProtocol
     
@@ -30,8 +31,31 @@ struct SettingsView: View {
     }
 
     var body: some View {
+        VStack(spacing: 0) {
+            // Tab picker
+            Picker("Settings", selection: $selectedTab) {
+                Text("API Key").tag(0)
+                Text("Server").tag(1)
+            }
+            .pickerStyle(.segmented)
+            .padding()
+            
+            // Content based on selected tab
+            if selectedTab == 0 {
+                apiKeySettingsView
+            } else {
+                serverSettingsView
+            }
+        }
+        .frame(width: 500, height: 400)
+        .onAppear {
+            loadAPIKey()
+        }
+    }
+    
+    private var apiKeySettingsView: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Settings")
+            Text("API Key Settings")
                 .font(.title)
                 .fontWeight(.bold)
 
@@ -140,9 +164,33 @@ struct SettingsView: View {
             }
         }
         .padding()
-        .frame(width: 450, height: 320)
-        .onAppear {
-            loadAPIKey()
+    }
+    
+    private var serverSettingsView: some View {
+        VStack {
+            if let apiKey = keychain.get(forKey: KeychainHelper.openAIAPIKey), !apiKey.isEmpty {
+                ServerSettingsView(aiModel: OpenAIModel(apiToken: apiKey))
+            } else {
+                VStack(spacing: 16) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 48))
+                        .foregroundColor(.orange)
+                    
+                    Text("API Key Required")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    
+                    Text("Please configure your OpenAI API key in the API Key tab before starting the server.")
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.secondary)
+                    
+                    Button("Go to API Key Settings") {
+                        selectedTab = 0
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .padding()
+            }
         }
     }
 
