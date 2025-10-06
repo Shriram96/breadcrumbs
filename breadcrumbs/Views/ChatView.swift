@@ -134,19 +134,30 @@ struct ChatView: View {
         var groups: [MessageGroup] = []
         var i = 0
         
+        Logger.ui("Starting message grouping with \(displayMessages.count) messages")
+        
         while i < displayMessages.count {
             let message = displayMessages[i]
             
             // Check if this is an assistant message with tool calls
             if message.role == .assistant, let toolCalls = message.toolCalls, !toolCalls.isEmpty {
+                Logger.ui("Found assistant message with \(toolCalls.count) tool calls")
+                for toolCall in toolCalls {
+                    Logger.ui("  - Tool call: \(toolCall.name), ID: \(toolCall.id)")
+                }
+                
                 // Collect tool results that follow
                 var toolResults: [ChatMessage] = []
                 var j = i + 1
                 
                 while j < displayMessages.count && displayMessages[j].role == .tool {
-                    toolResults.append(displayMessages[j])
+                    let toolResult = displayMessages[j]
+                    toolResults.append(toolResult)
+                    Logger.ui("  - Tool result: ID: \(toolResult.toolCallId ?? "nil"), Content: \(toolResult.content.prefix(50))...")
                     j += 1
                 }
+                
+                Logger.ui("Collected \(toolResults.count) tool results")
                 
                 // Find the final assistant response (if any)
                 var finalResponse: ChatMessage? = nil
@@ -172,6 +183,7 @@ struct ChatView: View {
             }
         }
         
+        Logger.ui("Created \(groups.count) message groups")
         return groups
     }
 }
@@ -320,9 +332,20 @@ struct ToolUsageDetails: View {
                     }
                 }
                 .padding(.horizontal, 12)
+                .onAppear {
+                    // Debug logging
+                    Logger.ui("Tool call: \(toolCall.name), ID: \(toolCall.id)")
+                    Logger.ui("Available tool results: \(toolResults.count)")
+                    for result in toolResults {
+                        Logger.ui("  - Result ID: \(result.toolCallId ?? "nil"), Content: \(result.content.prefix(50))...")
+                    }
+                }
             }
         }
         .padding(.vertical, 4)
+        .onAppear {
+            Logger.ui("ToolUsageDetails appeared with \(toolCalls.count) tool calls and \(toolResults.count) tool results")
+        }
     }
 }
 

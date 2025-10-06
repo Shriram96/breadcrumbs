@@ -1,0 +1,237 @@
+# Breadcrumbs - AI Chatbot App Architecture Rules
+
+## Project Overview
+An AI-assisted chatbot application built with SwiftUI and MVVM architecture, supporting multiple AI model providers and extensible tool system.
+
+## Architecture Principles
+
+### MVVM Structure
+- **Models**: Data structures (ChatMessage, ToolCall, etc.) in `Protocols/AIModel.swift`
+- **ViewModels**: Business logic and state management (ChatViewModel, etc.)
+- **Views**: SwiftUI views for UI presentation
+- **Protocols**: Abstract interfaces for extensibility
+
+### Core Protocols
+
+#### 1. AIModel Protocol (`Protocols/AIModel.swift`)
+- Abstract interface for all AI provider implementations
+- Required properties:
+  - `providerId`: Unique identifier (e.g., "openai", "anthropic")
+  - `displayName`: Human-readable name
+  - `supportsTools`: Boolean for tool/function calling capability
+- Required methods:
+  - `sendMessage(messages:tools:)`: Async chat completion
+  - `streamMessage(messages:tools:)`: Optional streaming support (has default implementation)
+- All AI providers must conform to this protocol
+- Current implementations: OpenAI (via MacPaw/OpenAI package)
+
+#### 2. AITool Protocol (`Protocols/AITool.swift`)
+- Interface for tools that AI models can invoke
+- Required properties:
+  - `name`: Unique tool identifier
+  - `description`: What the tool does
+  - `parametersSchema`: ToolParameterSchema wrapper for JSON Schema
+- Required methods:
+  - `execute(arguments:)`: Async tool execution
+- Helper extension: `asOpenAIFunction` for OpenAI compatibility
+- Tools are registered in `ToolRegistry` singleton
+- Current tools: HelloWorldTool
+
+### Data Models
+
+#### ChatMessage
+- Represents messages in conversation
+- Properties: id, role (system/user/assistant/tool), content, timestamp, toolCalls, toolCallId
+- `toolCallId` is used when role is .tool to reference which tool call this responds to
+- Conforms to: Identifiable, Codable, Sendable
+
+#### ToolCall
+- Represents AI's request to execute a tool
+- Properties: id, name, arguments (JSON string)
+- Conforms to: Identifiable, Codable, Sendable
+
+#### ToolResult
+- Represents result of tool execution
+- Properties: toolCallId, result
+- Conforms to: Codable, Sendable
+
+#### ToolParameterSchema
+- Sendable wrapper for tool parameter schemas
+- Contains `jsonSchema` dictionary
+- Ensures thread-safe schema definitions
+
+### Tool System
+- **ToolRegistry**: Singleton managing all available tools
+- Tools register themselves on app launch
+- AI models can discover and invoke tools
+- Tool execution is async and throws errors
+- Results are sent back to AI as context
+
+### Dependencies
+- **MacPaw/OpenAI**: Swift package for OpenAI API integration
+- **SwiftUI**: UI framework
+- **SwiftData**: Data persistence (future: chat history)
+
+## Coding Standards
+- Use Swift concurrency (async/await)
+- All protocols must be `Sendable` for thread safety
+- Prefer protocol-oriented design for extensibility
+- Use `@MainActor` for UI-related classes
+- Error handling with typed errors (AIModelError, ToolError)
+- **Security**: Store sensitive data (API keys) in macOS Keychain, never in UserDefaults or plain text
+
+## File Organization
+```
+breadcrumbs/
+├── Protocols/
+│   ├── AIModel.swift       # AI provider protocol + data models
+│   └── AITool.swift        # Tool protocol + registry
+├── Models/                 # Concrete AI model implementations
+│   └── OpenAIModel.swift   # OpenAI implementation using MacPaw/OpenAI
+├── Tools/                  # Tool implementations
+│   └── VPNDetectorTool.swift
+├── ViewModels/             # Business logic
+│   └── ChatViewModel.swift
+├── Views/                  # SwiftUI views
+│   ├── ChatView.swift
+│   ├── SettingsView.swift
+│   └── ContentView.swift
+└── Utilities/              # Helper classes
+    └── KeychainHelper.swift # Secure storage for API keys
+```
+
+## OpenAI Implementation Details (`Models/OpenAIModel.swift`)
+
+### Overview
+- Implements `AIModel` protocol using MacPaw/OpenAI Swift package
+- Supports both streaming and non-streaming responses
+- Handles function/tool calling
+- Converts between our ChatMessage format and OpenAI's ChatQuery format
+
+### Key Features
+1. **Initialization**
+   - Accept API token or custom Configuration
+   - Select specific OpenAI model (defaults to GPT-4o)
+
+2. **Message Conversion**
+   - Converts ChatMessage to ChatQuery.ChatCompletionMessageParam
+   - Handles system, user, assistant, and tool roles
+   - Preserves tool calls in assistant messages
+
+3. **Tool Integration**
+   - Converts AITool to ChatQuery.ChatCompletionToolParam
+   - Translates ToolParameterSchema to OpenAI's JSONSchema format
+   - Supports nested schema properties and types
+
+4. **Async/Await Bridging**
+   - Wraps completion-handler-based API with async/await
+   - Uses `withCheckedThrowingContinuation` for proper async conversion
+   - Handles streaming with AsyncThrowingStream
+
+5. **Error Handling**
+   - Throws AIModelError for invalid responses
+   - Propagates network errors properly
+   - Validates response structure
+
+### Implementation Notes
+- **Thread Safety**: Class is `final` and conforms to `Sendable`
+- **Streaming**: Yields content deltas from stream results
+- **Tool Results**: Currently basic support, may need refinement for complex tool workflows
+- **Cancellation**: Supports task cancellation in streaming mode
+
+## System Diagnostic Tools
+
+### Current Tools
+1. **VPNDetectorTool** (`Tools/VPNDetectorTool.swift`)
+   - Detects VPN connection status on macOS
+   - Identifies VPN type (IKEv2, PPTP, L2TP, OpenVPN)
+   - Provides interface name and IP address
+   - Uses SystemConfiguration and network interfaces APIs
+
+### Tool Input/Output Pattern
+- **ToolInput** protocol: Defines input structure with `toDictionary()` method
+- **ToolOutput** protocol: Defines output with `toFormattedString()` for AI consumption
+- Input models should be Codable for easy JSON parsing
+- Output models format data for human-readable AI responses
+
+## Chat Interface (`Views/ChatView.swift`)
+- SwiftUI-based chat interface
+- Real-time message display with bubbles
+- Processing indicator during AI/tool execution
+- Error handling with visual feedback
+- Auto-scrolling to latest messages
+- Tool execution visualization
+
+## ViewModel (`ViewModels/ChatViewModel.swift`)
+- Manages conversation state
+- Handles AI model interactions
+- Orchestrates tool execution flow
+- Maintains message history
+- Error handling and recovery
+
+## User Flow
+1. User enters API key in Settings (stored securely in Keychain)
+2. User asks diagnostic question in chat
+3. OpenAI analyzes query and decides if tools are needed
+4. If tools needed:
+   - AI makes tool call with parameters
+   - Tool executes and returns structured data
+   - AI receives tool result
+   - AI provides natural language explanation to user
+5. Response displayed in chat with formatted output
+
+## Security & Permissions
+
+### Keychain Storage (`Utilities/KeychainHelper.swift`)
+- **KeychainHelper**: Singleton class for Keychain operations
+- API keys stored using `kSecClassGenericPassword`
+- Keys accessible only after first unlock (`kSecAttrAccessibleAfterFirstUnlock`)
+- Service identifier: `com.breadcrumbs.systemdiagnostics`
+- Methods: `save()`, `get()`, `delete()`, `update()`, `exists()`
+- Settings view shows masked API key (bullets) when loaded from Keychain
+- Clear button available to remove stored credentials
+
+### App Entitlements (`breadcrumbs/breadcrumbs.entitlements`)
+The app requires specific entitlements to perform system diagnostics:
+
+1. **Network Client** (`com.apple.security.network.client`)
+   - Required for OpenAI API communication
+   - Allows outgoing network connections
+
+2. **App Sandbox Disabled** (`com.apple.security.app-sandbox: false`)
+   - Required for VPN detection and system configuration access
+   - Allows reading network interface information
+   - Enables SystemConfiguration framework access
+   - **Note**: For production, consider using temporary exceptions instead
+
+3. **Alternative (Sandboxed) Approach**:
+   - If keeping sandbox enabled, use temporary exceptions:
+     - `com.apple.security.temporary-exception.mach-lookup.global-name`
+     - `com.apple.security.temporary-exception.files.absolute-path.read-only`
+   - See commented section in entitlements file
+
+### VPN Detection Fallback
+- Primary method: Network interface detection (utun, ppp, tap, tun, ipsec)
+- Secondary method: SystemConfiguration framework (requires permissions)
+- Gracefully handles sandbox restrictions with fallback logic
+- Prints debug messages if SystemConfiguration access is denied
+
+## Future Considerations
+- Add more system diagnostic tools (disk space, memory, CPU, processes)
+- Add more AI providers (Anthropic Claude, Google Gemini, etc.)
+- Implement streaming responses for better UX
+- Persist chat history using SwiftData
+- Support multi-modal inputs (images, screenshots)
+- Tool execution sandboxing for security
+- Rate limiting and error recovery
+- Export diagnostic reports
+
+## Rules to Follow
+1. **Never break protocol contracts**: All implementations must fully conform
+2. **Tools must be stateless**: Tools should not maintain internal state
+3. **Error handling is required**: Always handle and propagate errors properly
+4. **Thread safety**: Use Sendable and @MainActor appropriately
+5. **Test tool execution**: Tools should include validation of arguments
+6. **Document new tools**: Each tool must have clear description and schema
+7. **Keep ViewModels testable**: Inject dependencies, avoid singletons where possible
+8. **Use async/await**: No completion handlers or callbacks

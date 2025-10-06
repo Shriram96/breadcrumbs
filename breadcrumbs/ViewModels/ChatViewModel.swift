@@ -120,6 +120,11 @@ class ChatViewModel: ObservableObject {
         assistantMessage: ChatMessage
     ) async throws -> ChatMessage {
 
+        Logger.tools("Handling \(toolCalls.count) tool calls")
+        for toolCall in toolCalls {
+            Logger.tools("  - Tool call: \(toolCall.name), ID: \(toolCall.id)")
+        }
+
         // Add the assistant message with tool calls to history
         messages.append(assistantMessage)
 
@@ -128,6 +133,8 @@ class ChatViewModel: ObservableObject {
         // Execute each tool call
         for toolCall in toolCalls {
             do {
+                Logger.tools("Executing tool: \(toolCall.name) with ID: \(toolCall.id)")
+                
                 // Decode arguments from JSON string
                 // Handle empty arguments case (can be empty string or "{}")
                 var arguments: [String: Any] = [:]
@@ -140,11 +147,15 @@ class ChatViewModel: ObservableObject {
                     arguments = parsedArgs
                 }
 
+                Logger.tools("Tool arguments: \(arguments)")
+
                 // Execute the tool
                 let result = try await toolRegistry.executeTool(
                     name: toolCall.name,
                     arguments: arguments
                 )
+
+                Logger.tools("Tool result: \(result.prefix(100))...")
 
                 // Create tool result message
                 let toolResultMessage = ChatMessage(
@@ -153,8 +164,12 @@ class ChatViewModel: ObservableObject {
                     toolCallId: toolCall.id
                 )
                 toolResults.append(toolResultMessage)
+                
+                Logger.tools("Created tool result message with ID: \(toolCall.id)")
 
             } catch {
+                Logger.tools("Tool execution failed: \(error.localizedDescription)")
+                
                 // If tool execution fails, send error as tool result
                 let errorResult = ChatMessage(
                     role: .tool,
@@ -165,8 +180,15 @@ class ChatViewModel: ObservableObject {
             }
         }
 
+        Logger.tools("Created \(toolResults.count) tool result messages")
+        for result in toolResults {
+            Logger.tools("  - Result ID: \(result.toolCallId ?? "nil"), Content: \(result.content.prefix(50))...")
+        }
+
         // Add tool results to messages
         messages.append(contentsOf: toolResults)
+
+        Logger.tools("Added tool results to messages. Total messages: \(messages.count)")
 
         // Get final response from AI with tool results
         let finalResponse = try await aiModel.sendMessage(
@@ -174,11 +196,17 @@ class ChatViewModel: ObservableObject {
             tools: nil  // Don't allow further tool calls in follow-up
         )
 
+        Logger.tools("Got final response from AI")
         return finalResponse
     }
 
     /// Format messages for display (excluding system messages)
     func displayMessages() -> [ChatMessage] {
-        return messages.filter { $0.role != .system && $0.role != .tool }
+        let filtered = messages.filter { $0.role != .system && $0.role != .tool }
+        Logger.chat("Display messages: \(filtered.count) out of \(messages.count) total messages")
+        for message in messages {
+            Logger.chat("  - Message role: \(message.role), ID: \(message.id), ToolCallId: \(message.toolCallId ?? "nil")")
+        }
+        return filtered
     }
 }
