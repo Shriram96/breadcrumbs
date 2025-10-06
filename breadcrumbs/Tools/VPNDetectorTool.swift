@@ -90,19 +90,28 @@ struct VPNDetectorTool: AITool {
     }
 
     func execute(arguments: [String: Any]) async throws -> String {
+        Logger.tools("VPNDetectorTool.execute called with arguments: \(arguments)")
+        
         // Parse input
         let interfaceName = arguments["interface_name"] as? String
+        Logger.tools("VPNDetectorTool: interfaceName = \(interfaceName ?? "nil")")
 
         // Detect VPN
+        Logger.tools("VPNDetectorTool: Starting VPN detection...")
         let output = try await detectVPN(interfaceName: interfaceName)
+        Logger.tools("VPNDetectorTool: VPN detection completed - isConnected: \(output.isConnected)")
 
         // Return formatted string
-        return output.toFormattedString()
+        let result = output.toFormattedString()
+        Logger.tools("VPNDetectorTool: Returning result: \(result.prefix(100))...")
+        return result
     }
 
     // MARK: - Private Detection Logic
 
     private func detectVPN(interfaceName: String? = nil) async throws -> VPNDetectorOutput {
+        Logger.tools("VPNDetectorTool.detectVPN: Starting detection for interface: \(interfaceName ?? "all")")
+        
         var isConnected = false
         var vpnType: String?
         var detectedInterface: String?
@@ -110,6 +119,7 @@ struct VPNDetectorTool: AITool {
 
         // Method 1: Check for VPN interfaces (utun, ppp, tap, tun)
         let vpnInterfaces = getVPNInterfaces()
+        Logger.tools("VPNDetectorTool.detectVPN: Found \(vpnInterfaces.count) VPN interfaces: \(vpnInterfaces)")
 
         if let specificInterface = interfaceName {
             // Check specific interface
@@ -132,15 +142,19 @@ struct VPNDetectorTool: AITool {
         // Method 2: Check SystemConfiguration for VPN services
         if !isConnected {
             isConnected = checkSystemConfigurationVPN()
+            Logger.tools("VPNDetectorTool.detectVPN: SystemConfiguration check result: \(isConnected)")
         }
 
-        return VPNDetectorOutput(
+        let result = VPNDetectorOutput(
             isConnected: isConnected,
             vpnType: vpnType,
             interfaceName: detectedInterface,
             ipAddress: ipAddress,
             timestamp: Date()
         )
+        
+        Logger.tools("VPNDetectorTool.detectVPN: Final result - isConnected: \(result.isConnected), type: \(result.vpnType ?? "nil"), interface: \(result.interfaceName ?? "nil")")
+        return result
     }
 
     /// Get list of active VPN-related network interfaces
