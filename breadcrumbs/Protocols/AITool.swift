@@ -10,7 +10,7 @@ import Combine
 
 /// A sendable wrapper for tool parameter schemas
 /// Represents JSON Schema in a type-safe, thread-safe manner
-struct ToolParameterSchema: Sendable {
+struct ToolParameterSchema: @unchecked Sendable {
     let jsonSchema: [String: Any]
 
     init(_ schema: [String: Any]) {
@@ -167,5 +167,6 @@ class ToolRegistry: ObservableObject {
         register(VPNDetectorTool())
         register(DNSReachabilityTool())
         register(AppCheckerTool())
+        register(SystemDiagnosticTool())
     }
 }

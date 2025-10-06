@@ -542,7 +542,7 @@ class MockFileManager: FileManager {
         return mockContents[path] ?? []
     }
     
-    override func resourceValues(forKeys keys: Set<URLResourceKey>, from url: URL) throws -> URLResourceValues {
+    func resourceValues(forKeys keys: Set<URLResourceKey>, from url: URL) throws -> URLResourceValues {
         return mockResourceValues[url.path] ?? URLResourceValues()
     }
 }
