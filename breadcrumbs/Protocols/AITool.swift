@@ -165,5 +165,6 @@ class ToolRegistry: ObservableObject {
     private func registerDefaultTools() {
         // Register system diagnostic tools
         register(VPNDetectorTool())
+        register(DNSReachabilityTool())
     }
 }

@@ -26,6 +26,9 @@ let package = Package(
 
         // Swift ArgumentParser for CLI
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.4.0"),
+        
+        // Swift Async DNS Resolver for DNS queries
+        .package(url: "https://github.com/apple/swift-async-dns-resolver", from: "0.4.0"),
     ],
     targets: [
         .executableTarget(
@@ -35,6 +38,7 @@ let package = Package(
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "NIO", package: "swift-nio"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                .product(name: "AsyncDNSResolver", package: "swift-async-dns-resolver"),
             ],
             path: "breadcrumbs"
         ),
