@@ -8,9 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		2892650E2E938603006A01CF /* OpenAI in Frameworks */ = {isa = PBXBuildFile; productRef = 289264C32E937F2C006A01CF /* OpenAI */; };
+		28DNS0032FFAA00000000008 /* AsyncDNSResolver in Frameworks */ = {isa = PBXBuildFile; productRef = 28DNS0022FFAA00000000007 /* AsyncDNSResolver */; };
 		28EBC1DE2E93C65F0029AB91 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 28ARGP0032FFAA00000000005 /* ArgumentParser */; };
 		28VPR0012FFAA00000000001 /* Vapor in Frameworks */ = {isa = PBXBuildFile; productRef = 28VPR0032FFAA00000000003 /* Vapor */; };
-		28DNS0032FFAA00000000008 /* AsyncDNSResolver in Frameworks */ = {isa = PBXBuildFile; productRef = 28DNS0022FFAA00000000007 /* AsyncDNSResolver */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -602,20 +602,20 @@
 				minimumVersion = 1.4.0;
 			};
 		};
-		28VPR0022FFAA00000000002 /* XCRemoteSwiftPackageReference "vapor" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/vapor/vapor";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 4.0.0;
-			};
-		};
 		28DNS0012FFAA00000000006 /* XCRemoteSwiftPackageReference "swift-async-dns-resolver" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/apple/swift-async-dns-resolver";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 0.4.0;
+			};
+		};
+		28VPR0022FFAA00000000002 /* XCRemoteSwiftPackageReference "vapor" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/vapor/vapor";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -631,15 +631,15 @@
 			package = 28ARGP0022FFAA00000000004 /* XCRemoteSwiftPackageReference "swift-argument-parser" */;
 			productName = ArgumentParser;
 		};
-		28VPR0032FFAA00000000003 /* Vapor */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 28VPR0022FFAA00000000002 /* XCRemoteSwiftPackageReference "vapor" */;
-			productName = Vapor;
-		};
 		28DNS0022FFAA00000000007 /* AsyncDNSResolver */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 28DNS0012FFAA00000000006 /* XCRemoteSwiftPackageReference "swift-async-dns-resolver" */;
 			productName = AsyncDNSResolver;
+		};
+		28VPR0032FFAA00000000003 /* Vapor */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 28VPR0022FFAA00000000002 /* XCRemoteSwiftPackageReference "vapor" */;
+			productName = Vapor;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

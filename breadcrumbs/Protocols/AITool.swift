@@ -166,5 +166,6 @@ class ToolRegistry: ObservableObject {
         // Register system diagnostic tools
         register(VPNDetectorTool())
         register(DNSReachabilityTool())
+        register(AppCheckerTool())
     }
 }
