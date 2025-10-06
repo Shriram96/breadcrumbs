@@ -193,7 +193,35 @@ struct VPNDetectorTool: AITool {
                 let status = connection.status
                 let isConnected = (status == .connected)
                 
-                Logger.tools("VPNDetectorTool.checkPersonalVPNConnections: VPN status: \(status.rawValue), connected: \(isConnected)")
+                Logger.tools("VPNDetectorTool.checkPersonalVPNConnections: VPN status: \(status.rawValue) (\(self.statusToString(status))), connected: \(isConnected)")
+                
+                // Additional check: if status is connected, verify there's actually a VPN interface with IP
+                if isConnected {
+                    let vpnInterfaces = self.getVPNInterfaces()
+                    let hasValidInterface = vpnInterfaces.contains { interface in
+                        if let ip = self.getIPAddress(for: interface), !ip.isEmpty {
+                            Logger.tools("VPNDetectorTool.checkPersonalVPNConnections: Found VPN interface \(interface) with IP \(ip)")
+                            return true
+                        }
+                        return false
+                    }
+                    
+                    if !hasValidInterface {
+                        Logger.tools("VPNDetectorTool.checkPersonalVPNConnections: Status says connected but no VPN interface with IP found")
+                        // Override the status - if there's no interface with IP, it's not really connected
+                        let correctedResult = VPNDetectorOutput(
+                            isConnected: false,
+                            vpnType: nil,
+                            interfaceName: nil,
+                            ipAddress: nil,
+                            connectionStatus: "Status mismatch - no VPN interface",
+                            connectedDate: nil,
+                            timestamp: Date()
+                        )
+                        continuation.resume(returning: correctedResult)
+                        return
+                    }
+                }
                 
                 var vpnType: String?
                 var detectedInterface: String?
@@ -279,24 +307,39 @@ struct VPNDetectorTool: AITool {
                     let connection = manager.connection
                     let status = connection.status
                     
+                    Logger.tools("VPNDetectorTool.checkTunnelProviderConnections: Tunnel provider status: \(status.rawValue) (\(self.statusToString(status)))")
+                    
                     if status == .connected {
-                        isConnected = true
-                        connectionStatus = "Connected"
-                        connectedDate = connection.connectedDate
-                        vpnType = "Tunnel Provider"
-                        
-                        // Get interface and IP information
-                        if let interface = interfaceName {
-                            detectedInterface = interface
-                            ipAddress = self.getIPAddress(for: interface)
-                        } else {
-                            let vpnInterfaces = self.getVPNInterfaces()
-                            if let firstInterface = vpnInterfaces.first {
-                                detectedInterface = firstInterface
-                                ipAddress = self.getIPAddress(for: firstInterface)
+                        // Verify there's actually a VPN interface with IP
+                        let vpnInterfaces = self.getVPNInterfaces()
+                        let hasValidInterface = vpnInterfaces.contains { interface in
+                            if let ip = self.getIPAddress(for: interface), !ip.isEmpty {
+                                Logger.tools("VPNDetectorTool.checkTunnelProviderConnections: Found VPN interface \(interface) with IP \(ip)")
+                                return true
                             }
+                            return false
                         }
-                        break
+                        
+                        if hasValidInterface {
+                            isConnected = true
+                            connectionStatus = "Connected"
+                            connectedDate = connection.connectedDate
+                            vpnType = "Tunnel Provider"
+                            
+                            // Get interface and IP information
+                            if let interface = interfaceName {
+                                detectedInterface = interface
+                                ipAddress = self.getIPAddress(for: interface)
+                            } else {
+                                if let firstInterface = vpnInterfaces.first {
+                                    detectedInterface = firstInterface
+                                    ipAddress = self.getIPAddress(for: firstInterface)
+                                }
+                            }
+                            break
+                        } else {
+                            Logger.tools("VPNDetectorTool.checkTunnelProviderConnections: Status says connected but no VPN interface with IP found")
+                        }
                     }
                 }
                 
@@ -331,19 +374,22 @@ struct VPNDetectorTool: AITool {
         var detectedInterface: String?
         var ipAddress: String?
         
-        if let specificInterface = interfaceName {
-            if vpnInterfaces.contains(specificInterface) {
-                isConnected = true
-                detectedInterface = specificInterface
-                vpnType = determineVPNType(from: specificInterface)
-                ipAddress = getIPAddress(for: specificInterface)
-            }
-        } else {
-            if let firstVPNInterface = vpnInterfaces.first {
-                isConnected = true
-                detectedInterface = firstVPNInterface
-                vpnType = determineVPNType(from: firstVPNInterface)
-                ipAddress = getIPAddress(for: firstVPNInterface)
+        // Check if any VPN interface actually has an IP address (indicating real connection)
+        let interfacesToCheck = interfaceName != nil ? [interfaceName!] : vpnInterfaces
+        
+        for interface in interfacesToCheck {
+            if vpnInterfaces.contains(interface) {
+                // Only consider it connected if it has an IP address
+                if let ip = getIPAddress(for: interface), !ip.isEmpty {
+                    isConnected = true
+                    detectedInterface = interface
+                    vpnType = determineVPNType(from: interface)
+                    ipAddress = ip
+                    Logger.tools("VPNDetectorTool.checkVPNInterfaces: Found connected VPN interface \(interface) with IP \(ip)")
+                    break
+                } else {
+                    Logger.tools("VPNDetectorTool.checkVPNInterfaces: Interface \(interface) exists but has no IP address")
+                }
             }
         }
         
