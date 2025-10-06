@@ -11,7 +11,7 @@ import LocalAuthentication
 import os.log
 
 /// Helper class for storing and retrieving sensitive data from macOS Keychain
-class KeychainHelper {
+class KeychainHelper: KeychainProtocol {
 
     static let shared = KeychainHelper()
 
@@ -30,6 +30,10 @@ class KeychainHelper {
     /// - Returns: True if successful, false otherwise
     @discardableResult
     func save(_ value: String, forKey key: String, requireBiometric: Bool = false) -> Bool {
+        #if UNIT_TESTING
+        // Skip actual keychain operations during unit tests to avoid system prompts
+        return true
+        #else
         guard let data = value.data(using: .utf8) else {
             return false
         }
@@ -58,6 +62,7 @@ class KeychainHelper {
 
         let status = SecItemAdd(query as CFDictionary, nil)
         return status == errSecSuccess
+        #endif
     }
 
     /// Retrieve a string value from Keychain with optional biometric authentication
@@ -66,6 +71,11 @@ class KeychainHelper {
     ///   - prompt: Optional prompt message for biometric authentication
     /// - Returns: The stored string, or nil if not found or authentication failed
     func get(forKey key: String, prompt: String? = nil) -> String? {
+        #if UNIT_TESTING
+        // Skip actual keychain operations during unit tests to avoid system prompts
+        // Return a mock value for testing
+        return "mock_api_key_for_testing"
+        #else
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -92,6 +102,7 @@ class KeychainHelper {
         }
 
         return value
+        #endif
     }
 
     /// Delete a value from Keychain
@@ -99,6 +110,10 @@ class KeychainHelper {
     /// - Returns: True if successful or item doesn't exist, false if error
     @discardableResult
     func delete(forKey key: String) -> Bool {
+        #if UNIT_TESTING
+        // Skip actual keychain operations during unit tests to avoid system prompts
+        return true
+        #else
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -107,6 +122,7 @@ class KeychainHelper {
 
         let status = SecItemDelete(query as CFDictionary)
         return status == errSecSuccess || status == errSecItemNotFound
+        #endif
     }
 
     /// Check if a value exists in Keychain
@@ -124,6 +140,10 @@ class KeychainHelper {
     /// - Returns: True if successful, false otherwise
     @discardableResult
     func update(_ value: String, forKey key: String, requireBiometric: Bool = false) -> Bool {
+        #if UNIT_TESTING
+        // Skip actual keychain operations during unit tests to avoid system prompts
+        return true
+        #else
         guard let data = value.data(using: .utf8) else {
             return false
         }
@@ -156,6 +176,7 @@ class KeychainHelper {
         }
 
         return status == errSecSuccess
+        #endif
     }
 
     // MARK: - Biometric Authentication Methods
@@ -163,6 +184,10 @@ class KeychainHelper {
     /// Check if biometric authentication is available on the device
     /// - Returns: True if Touch ID/Face ID is available and enrolled
     func isBiometricAuthenticationAvailable() -> Bool {
+        #if UNIT_TESTING
+        // Skip biometric checks during unit tests to avoid prompts
+        return false
+        #else
         let context = LAContext()
         var error: NSError?
         
@@ -173,11 +198,16 @@ class KeychainHelper {
         }
         
         return isAvailable
+        #endif
     }
 
     /// Get the type of biometric authentication available
     /// - Returns: String describing the biometric type (Touch ID, Face ID, etc.)
     func getBiometricType() -> String {
+        #if UNIT_TESTING
+        // Return mock biometric type during unit tests
+        return "Touch ID"
+        #else
         let context = LAContext()
         var error: NSError?
         
@@ -197,6 +227,7 @@ class KeychainHelper {
         @unknown default:
             return "Unknown"
         }
+        #endif
     }
 
     /// Authenticate user with biometric authentication
@@ -204,6 +235,12 @@ class KeychainHelper {
     ///   - reason: The reason for authentication (shown to user)
     ///   - completion: Completion handler with success/failure result
     func authenticateWithBiometrics(reason: String, completion: @escaping (Bool, Error?) -> Void) {
+        #if UNIT_TESTING
+        // Skip biometric authentication during unit tests to avoid prompts
+        DispatchQueue.main.async {
+            completion(true, nil)
+        }
+        #else
         let context = LAContext()
         
         // Set Touch ID authentication reuse duration (up to 5 minutes)
@@ -214,6 +251,7 @@ class KeychainHelper {
                 completion(success, error)
             }
         }
+        #endif
     }
 
     // MARK: - Private Helper Methods
