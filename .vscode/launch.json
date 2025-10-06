@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:breadcrumbs}",
+            "name": "Debug breadcrumbs-server",
+            "program": "${workspaceFolder:breadcrumbs}/.build/debug/breadcrumbs-server",
+            "preLaunchTask": "swift: Build Debug breadcrumbs-server"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:breadcrumbs}",
+            "name": "Release breadcrumbs-server",
+            "program": "${workspaceFolder:breadcrumbs}/.build/release/breadcrumbs-server",
+            "preLaunchTask": "swift: Build Release breadcrumbs-server"
+        }
+    ]
+}
