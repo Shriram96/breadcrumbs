@@ -27,9 +27,9 @@ struct ChatView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 12) {
-                        ForEach(viewModel.displayMessages()) { message in
-                            MessageBubble(message: message)
-                                .id(message.id)
+                        ForEach(groupedMessages()) { group in
+                            MessageGroupView(group: group)
+                                .id(group.id)
                         }
 
                         // Processing indicator
@@ -47,9 +47,9 @@ struct ChatView: View {
                     .padding()
                 }
                 .onChange(of: viewModel.messages.count) { _ in
-                    if let lastMessage = viewModel.displayMessages().last {
+                    if let lastGroup = groupedMessages().last {
                         withAnimation {
-                            proxy.scrollTo(lastMessage.id, anchor: .bottom)
+                            proxy.scrollTo(lastGroup.id, anchor: .bottom)
                         }
                     }
                 }
@@ -126,6 +126,192 @@ struct ChatView: View {
             await viewModel.sendMessage(message)
         }
     }
+    
+    // MARK: - Message Grouping
+    
+    private func groupedMessages() -> [MessageGroup] {
+        let displayMessages = viewModel.displayMessages()
+        var groups: [MessageGroup] = []
+        var i = 0
+        
+        while i < displayMessages.count {
+            let message = displayMessages[i]
+            
+            // Check if this is an assistant message with tool calls
+            if message.role == .assistant, let toolCalls = message.toolCalls, !toolCalls.isEmpty {
+                // Collect tool results that follow
+                var toolResults: [ChatMessage] = []
+                var j = i + 1
+                
+                while j < displayMessages.count && displayMessages[j].role == .tool {
+                    toolResults.append(displayMessages[j])
+                    j += 1
+                }
+                
+                // Find the final assistant response (if any)
+                var finalResponse: ChatMessage? = nil
+                if j < displayMessages.count && displayMessages[j].role == .assistant {
+                    finalResponse = displayMessages[j]
+                    j += 1
+                }
+                
+                // Create tool group
+                let toolGroup = ToolUsageGroup(
+                    id: message.id,
+                    toolCalls: toolCalls,
+                    toolResults: toolResults,
+                    finalResponse: finalResponse
+                )
+                groups.append(.toolUsage(toolGroup))
+                
+                i = j
+            } else {
+                // Regular message
+                groups.append(.regular(message))
+                i += 1
+            }
+        }
+        
+        return groups
+    }
+}
+
+// MARK: - Message Grouping Data Structures
+
+struct ToolUsageGroup: Identifiable {
+    let id: UUID
+    let toolCalls: [ToolCall]
+    let toolResults: [ChatMessage]
+    let finalResponse: ChatMessage?
+    
+    init(id: UUID, toolCalls: [ToolCall], toolResults: [ChatMessage], finalResponse: ChatMessage?) {
+        self.id = id
+        self.toolCalls = toolCalls
+        self.toolResults = toolResults
+        self.finalResponse = finalResponse
+    }
+}
+
+enum MessageGroup: Identifiable {
+    case regular(ChatMessage)
+    case toolUsage(ToolUsageGroup)
+    
+    var id: UUID {
+        switch self {
+        case .regular(let message):
+            return message.id
+        case .toolUsage(let group):
+            return group.id
+        }
+    }
+}
+
+// MARK: - Message Group View
+
+struct MessageGroupView: View {
+    let group: MessageGroup
+    @State private var isToolUsageExpanded = false
+    
+    var body: some View {
+        switch group {
+        case .regular(let message):
+            MessageBubble(message: message)
+            
+        case .toolUsage(let toolGroup):
+            VStack(alignment: .leading, spacing: 8) {
+                // Tool usage header (collapsible)
+                ToolUsageHeader(
+                    toolCalls: toolGroup.toolCalls,
+                    isExpanded: $isToolUsageExpanded
+                )
+                
+                // Tool usage details (expandable)
+                if isToolUsageExpanded {
+                    ToolUsageDetails(
+                        toolCalls: toolGroup.toolCalls,
+                        toolResults: toolGroup.toolResults
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                }
+                
+                // Final AI response
+                if let finalResponse = toolGroup.finalResponse {
+                    MessageBubble(message: finalResponse)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Tool Usage Header
+
+struct ToolUsageHeader: View {
+    let toolCalls: [ToolCall]
+    @Binding var isExpanded: Bool
+    
+    var body: some View {
+        HStack {
+            Spacer(minLength: 60)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isExpanded.toggle()
+                    }
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "wrench.and.screwdriver")
+                            .font(.caption2)
+                        Text("Using tool: \(toolCalls.map { $0.name }.joined(separator: ", "))")
+                            .font(.caption2)
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.caption2)
+                    }
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Spacer(minLength: 60)
+        }
+    }
+}
+
+// MARK: - Tool Usage Details
+
+struct ToolUsageDetails: View {
+    let toolCalls: [ToolCall]
+    let toolResults: [ChatMessage]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Array(zip(toolCalls, toolResults)), id: \.0.id) { toolCall, toolResult in
+                VStack(alignment: .leading, spacing: 4) {
+                    // Tool call info
+                    HStack {
+                        Text("🔧 \(toolCall.name)")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                        Spacer()
+                    }
+                    
+                    // Tool result
+                    Text(toolResult.content)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(8)
+                        .background(Color(nsColor: .textBackgroundColor))
+                        .cornerRadius(6)
+                }
+                .padding(.horizontal, 12)
+            }
+        }
+        .padding(.vertical, 4)
+    }
 }
 
 // MARK: - Message Bubble
@@ -146,18 +332,6 @@ struct MessageBubble: View {
                     .foregroundColor(textColor)
                     .cornerRadius(12)
                     .textSelection(.enabled)
-
-                // Tool calls indicator
-                if let toolCalls = message.toolCalls, !toolCalls.isEmpty {
-                    HStack(spacing: 4) {
-                        Image(systemName: "wrench.and.screwdriver")
-                            .font(.caption2)
-                        Text("Using tools: \(toolCalls.map { $0.name }.joined(separator: ", "))")
-                            .font(.caption2)
-                    }
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 4)
-                }
             }
 
             if message.role == .assistant {
