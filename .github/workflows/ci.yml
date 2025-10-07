@@ -1,0 +1,45 @@
+# Main CI workflow that orchestrates other workflows
+name: CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  # This job will always run and can be used to trigger other workflows
+  ci-orchestrator:
+    runs-on: ubuntu-latest
+    outputs:
+      should-run-tests: ${{ steps.changes.outputs.tests }}
+      should-run-build: ${{ steps.changes.outputs.build }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Check for changes
+      id: changes
+      run: |
+        # Check if test files have changed
+        if git diff --name-only HEAD~1 HEAD | grep -E '\.(swift)$' | grep -E '(Test|test)'; then
+          echo "tests=true" >> $GITHUB_OUTPUT
+        else
+          echo "tests=false" >> $GITHUB_OUTPUT
+        fi
+        
+        # Check if build files have changed
+        if git diff --name-only HEAD~1 HEAD | grep -E '\.(swift|plist|pbxproj)$'; then
+          echo "build=true" >> $GITHUB_OUTPUT
+        else
+          echo "build=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Set up environment
+      run: |
+        echo "CI environment set up"
+        echo "Tests needed: ${{ steps.changes.outputs.tests }}"
+        echo "Build needed: ${{ steps.changes.outputs.build }}"
