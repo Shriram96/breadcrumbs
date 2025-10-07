@@ -39,6 +39,14 @@ struct VPNDetectorOutput: ToolOutput {
     let connectionStatus: String?
     let connectedDate: Date?
     let timestamp: Date
+    
+    // VPN Profile Data
+    let serverAddress: String?
+    let remoteIdentifier: String?
+    let localIdentifier: String?
+    let displayName: String?
+    let hasCertificate: Bool
+    let certificateInfo: String?
 
     func toFormattedString() -> String {
         var result = "VPN Connection Status:\n"
@@ -64,11 +72,34 @@ struct VPNDetectorOutput: ToolOutput {
                 result += "- Connected Since: \(formatter.string(from: connectedDate))\n"
             }
         }
+        
+        // VPN Profile Data
+        if let displayName = displayName {
+            result += "\nVPN Profile Information:\n"
+            result += "- Display Name: \(displayName)\n"
+        }
+        if let serverAddress = serverAddress {
+            result += "- Server Address: \(serverAddress)\n"
+        }
+        if let remoteId = remoteIdentifier {
+            result += "- Remote ID: \(remoteId)\n"
+        }
+        if let localId = localIdentifier {
+            result += "- Local ID: \(localId)\n"
+        }
+        if hasCertificate {
+            result += "- Certificate: Present\n"
+            if let certInfo = certificateInfo {
+                result += "- Certificate Info: \(certInfo)\n"
+            }
+        } else {
+            result += "- Certificate: None\n"
+        }
 
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .medium
-        result += "- Checked at: \(formatter.string(from: timestamp))"
+        result += "\n- Checked at: \(formatter.string(from: timestamp))"
 
         return result
     }
@@ -160,7 +191,13 @@ struct VPNDetectorTool: AITool {
             ipAddress: nil,
             connectionStatus: "Disconnected",
             connectedDate: nil,
-            timestamp: Date()
+            timestamp: Date(),
+            serverAddress: nil,
+            remoteIdentifier: nil,
+            localIdentifier: nil,
+            displayName: nil,
+            hasCertificate: false,
+            certificateInfo: nil
         )
         
         Logger.tools("VPNDetectorTool.detectVPN: No VPN connection found")
@@ -184,7 +221,13 @@ struct VPNDetectorTool: AITool {
                         ipAddress: nil,
                         connectionStatus: "Error loading preferences",
                         connectedDate: nil,
-                        timestamp: Date()
+                        timestamp: Date(),
+                        serverAddress: nil,
+                        remoteIdentifier: nil,
+                        localIdentifier: nil,
+                        displayName: nil,
+                        hasCertificate: false,
+                        certificateInfo: nil
                     ))
                     return
                 }
@@ -216,7 +259,13 @@ struct VPNDetectorTool: AITool {
                             ipAddress: nil,
                             connectionStatus: "Status mismatch - no VPN interface",
                             connectedDate: nil,
-                            timestamp: Date()
+                            timestamp: Date(),
+                            serverAddress: nil,
+                            remoteIdentifier: nil,
+                            localIdentifier: nil,
+                            displayName: nil,
+                            hasCertificate: false,
+                            certificateInfo: nil
                         )
                         continuation.resume(returning: correctedResult)
                         return
@@ -229,20 +278,44 @@ struct VPNDetectorTool: AITool {
                 var connectionStatus: String?
                 var connectedDate: Date?
                 
+                // VPN Profile Data
+                var serverAddress: String?
+                var remoteIdentifier: String?
+                var localIdentifier: String?
+                var displayName: String?
+                var hasCertificate = false
+                var certificateInfo: String?
+                
+                // Extract VPN profile data from manager
+                let manager = NEVPNManager.shared()
+                displayName = manager.localizedDescription
+                
+                if let vpnProtocol = manager.protocolConfiguration {
+                    serverAddress = vpnProtocol.serverAddress
+                    
+                    // Check for certificate/identity
+                    if vpnProtocol.identityReference != nil || vpnProtocol.identityData != nil {
+                        hasCertificate = true
+                        certificateInfo = "Certificate-based authentication configured"
+                    }
+                    
+                    // Extract protocol-specific data
+                    if let ikev2Protocol = vpnProtocol as? NEVPNProtocolIKEv2 {
+                        vpnType = "IKEv2"
+                        remoteIdentifier = ikev2Protocol.remoteIdentifier
+                        localIdentifier = ikev2Protocol.localIdentifier
+                    } else if let ipsecProtocol = vpnProtocol as? NEVPNProtocolIPSec {
+                        vpnType = "IPSec"
+                        remoteIdentifier = ipsecProtocol.remoteIdentifier
+                        localIdentifier = ipsecProtocol.localIdentifier
+                    } else {
+                        vpnType = "Personal VPN"
+                    }
+                }
+                
                 if isConnected {
                     connectionStatus = "Connected"
                     connectedDate = connection.connectedDate
-                    
-                    // Determine VPN type from protocol
-                    if let vpnProtocol = NEVPNManager.shared().protocolConfiguration {
-                        if vpnProtocol is NEVPNProtocolIKEv2 {
-                            vpnType = "IKEv2"
-                        } else if vpnProtocol is NEVPNProtocolIPSec {
-                            vpnType = "IPSec"
-                        } else {
-                            vpnType = "Personal VPN"
-                        }
-                    }
                     
                     // Get interface and IP information
                     if let interface = interfaceName {
@@ -267,7 +340,13 @@ struct VPNDetectorTool: AITool {
                     ipAddress: ipAddress,
                     connectionStatus: connectionStatus,
                     connectedDate: connectedDate,
-                    timestamp: Date()
+                    timestamp: Date(),
+                    serverAddress: serverAddress,
+                    remoteIdentifier: remoteIdentifier,
+                    localIdentifier: localIdentifier,
+                    displayName: displayName,
+                    hasCertificate: hasCertificate,
+                    certificateInfo: certificateInfo
                 )
                 
                 continuation.resume(returning: result)
@@ -291,7 +370,13 @@ struct VPNDetectorTool: AITool {
                         ipAddress: nil,
                         connectionStatus: "Error loading tunnel providers",
                         connectedDate: nil,
-                        timestamp: Date()
+                        timestamp: Date(),
+                        serverAddress: nil,
+                        remoteIdentifier: nil,
+                        localIdentifier: nil,
+                        displayName: nil,
+                        hasCertificate: false,
+                        certificateInfo: nil
                     ))
                     return
                 }
@@ -354,7 +439,13 @@ struct VPNDetectorTool: AITool {
                     ipAddress: ipAddress,
                     connectionStatus: connectionStatus,
                     connectedDate: connectedDate,
-                    timestamp: Date()
+                    timestamp: Date(),
+                    serverAddress: nil, // Tunnel providers don't expose this data
+                    remoteIdentifier: nil,
+                    localIdentifier: nil,
+                    displayName: nil,
+                    hasCertificate: false,
+                    certificateInfo: nil
                 )
                 
                 continuation.resume(returning: result)
@@ -400,7 +491,13 @@ struct VPNDetectorTool: AITool {
             ipAddress: ipAddress,
             connectionStatus: isConnected ? "Interface Active" : "No VPN Interface",
             connectedDate: nil,
-            timestamp: Date()
+            timestamp: Date(),
+            serverAddress: nil, // Interface-based detection doesn't provide this
+            remoteIdentifier: nil,
+            localIdentifier: nil,
+            displayName: nil,
+            hasCertificate: false,
+            certificateInfo: nil
         )
     }
     
@@ -522,7 +619,13 @@ struct VPNDetectorTool: AITool {
                 ipAddress: nil,
                 connectionStatus: "Sandbox restriction",
                 connectedDate: nil,
-                timestamp: Date()
+                timestamp: Date(),
+                serverAddress: nil,
+                remoteIdentifier: nil,
+                localIdentifier: nil,
+                displayName: nil,
+                hasCertificate: false,
+                certificateInfo: nil
             )
         }
 
@@ -535,7 +638,13 @@ struct VPNDetectorTool: AITool {
                 ipAddress: nil,
                 connectionStatus: "Cannot read network services",
                 connectedDate: nil,
-                timestamp: Date()
+                timestamp: Date(),
+                serverAddress: nil,
+                remoteIdentifier: nil,
+                localIdentifier: nil,
+                displayName: nil,
+                hasCertificate: false,
+                certificateInfo: nil
             )
         }
 
@@ -574,7 +683,13 @@ struct VPNDetectorTool: AITool {
                             ipAddress: ipAddress,
                             connectionStatus: "Connected via SystemConfiguration",
                             connectedDate: nil,
-                            timestamp: Date()
+                            timestamp: Date(),
+                            serverAddress: nil, // SystemConfiguration doesn't expose this
+                            remoteIdentifier: nil,
+                            localIdentifier: nil,
+                            displayName: nil,
+                            hasCertificate: false,
+                            certificateInfo: nil
                         )
                     }
                 }
@@ -588,7 +703,13 @@ struct VPNDetectorTool: AITool {
             ipAddress: nil,
             connectionStatus: "No active VPN services",
             connectedDate: nil,
-            timestamp: Date()
+            timestamp: Date(),
+            serverAddress: nil,
+            remoteIdentifier: nil,
+            localIdentifier: nil,
+            displayName: nil,
+            hasCertificate: false,
+            certificateInfo: nil
         )
     }
 }
