@@ -10,7 +10,7 @@ import Combine
 @testable import breadcrumbs
 
 /// Mock implementation of AITool for unit testing
-class MockAITool: AITool {
+final class MockAITool: AITool, @unchecked Sendable {
     
     // MARK: - Properties
     

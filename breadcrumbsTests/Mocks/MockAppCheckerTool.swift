@@ -9,7 +9,7 @@ import Foundation
 @testable import breadcrumbs
 
 /// Mock implementation of AppCheckerTool for testing purposes
-class MockAppCheckerTool: AITool {
+final class MockAppCheckerTool: AITool, @unchecked Sendable {
     
     let name = "app_checker"
     

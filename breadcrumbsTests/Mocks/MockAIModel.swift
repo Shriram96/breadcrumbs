@@ -9,7 +9,7 @@ import Foundation
 @testable import breadcrumbs
 
 /// Mock implementation of AIModel for unit testing
-final class MockAIModel: AIModel {
+final class MockAIModel: AIModel, @unchecked Sendable {
     
     // MARK: - Properties
     

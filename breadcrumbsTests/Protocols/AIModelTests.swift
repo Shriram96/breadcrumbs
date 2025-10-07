@@ -9,7 +9,7 @@ import XCTest
 @testable import breadcrumbs
 
 /// Simple mock that only implements sendMessage (not streamMessage) to test default implementation
-final class SimpleMockAIModel: AIModel {
+final class SimpleMockAIModel: AIModel, @unchecked Sendable {
     let providerId: String = "simple-mock"
     let displayName: String = "Simple Mock AI Model"
     let supportsTools: Bool = true

@@ -64,7 +64,13 @@ final class TestUtilities {
         ipAddress: String? = "192.168.1.100",
         connectionStatus: String? = "Connected",
         connectedDate: Date? = Date(),
-        timestamp: Date = Date()
+        timestamp: Date = Date(),
+        serverAddress: String? = "vpn.example.com",
+        remoteIdentifier: String? = "remote-id",
+        localIdentifier: String? = "local-id",
+        displayName: String? = "Test VPN",
+        hasCertificate: Bool = false,
+        certificateInfo: String? = nil
     ) -> VPNDetectorOutput {
         return VPNDetectorOutput(
             isConnected: isConnected,
@@ -73,7 +79,13 @@ final class TestUtilities {
             ipAddress: ipAddress,
             connectionStatus: connectionStatus,
             connectedDate: connectedDate,
-            timestamp: timestamp
+            timestamp: timestamp,
+            serverAddress: serverAddress,
+            remoteIdentifier: remoteIdentifier,
+            localIdentifier: localIdentifier,
+            displayName: displayName,
+            hasCertificate: hasCertificate,
+            certificateInfo: certificateInfo
         )
     }
     
