@@ -78,7 +78,7 @@ The security workflow includes:
 ## Troubleshooting
 
 ### Common Issues
-- **Xcode version**: Workflows use Xcode 15.0, update if needed
+- **Xcode version**: Workflows use Xcode 15.4, update if needed
 - **Coverage upload**: Ensure Codecov integration is set up
 - **Export options**: Verify `ExportOptions.plist` exists and is valid
 

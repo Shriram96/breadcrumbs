@@ -6,7 +6,7 @@ This guide provides comprehensive instructions for setting up and installing Bre
 
 ### System Requirements
 
-- **macOS**: 13.0 (Ventura) or later
+- **macOS**: 15.0 (Sequoia) or later
 - **Architecture**: Intel x64 or Apple Silicon (M1/M2/M3)
 - **Memory**: 4GB RAM minimum, 8GB recommended
 - **Storage**: 100MB available space
@@ -70,7 +70,7 @@ This guide provides comprehensive instructions for setting up and installing Bre
 3. **Configure Build Settings**:
    - Select the `breadcrumbs` target
    - Go to Build Settings
-   - Ensure deployment target is set to macOS 13.0+
+   - Ensure deployment target is set to macOS 15.0+
 
 4. **Build and Run**:
    - Select your target device (Mac)

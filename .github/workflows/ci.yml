@@ -10,7 +10,7 @@ on:
 jobs:
   # This job will always run and can be used to trigger other workflows
   ci-orchestrator:
-    runs-on: ubuntu-latest
+    runs-on: macos-15
     outputs:
       should-run-tests: ${{ steps.changes.outputs.tests }}
       should-run-build: ${{ steps.changes.outputs.build }}

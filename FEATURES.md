@@ -587,7 +587,7 @@ User: "Slack keeps crashing"
 AI: [Uses SystemDiagnosticTool + AppCheckerTool]
 Result: "Found 5 crash reports for Slack in last 30 minutes
          App Version: 4.35.126
-         macOS: 14.2.1
+         macOS: 15.0
          Common error: EXC_BAD_ACCESS (SIGSEGV)
          Thread 0 crashed: libwebrtc.dylib"
 ```

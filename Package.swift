@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "breadcrumbs",
     platforms: [
-        .macOS(.v14)  // Use highest available version, Xcode project targets 26.0 but SPM doesn't support it yet
+        .macOS(.v15)  // Minimum macOS 15.0 (Sequoia)
     ],
     products: [
         .library(

@@ -6,7 +6,7 @@ This guide provides comprehensive information for developers working on the Brea
 
 ### Prerequisites
 
-- **macOS**: 13.0 (Ventura) or later
+- **macOS**: 15.0 (Sequoia) or later
 - **Xcode**: 15.0 or later
 - **Swift**: 5.9 or later
 - **Git**: Latest version

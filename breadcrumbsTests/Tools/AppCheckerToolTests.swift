@@ -493,7 +493,7 @@ final class AppCheckerToolTests: XCTestCase {
                 isBackgroundAgent: false,
                 supportedFileTypes: ["html", "htm", "webarchive"],
                 urlSchemes: ["https", "http"],
-                minimumSystemVersion: "13.0",
+                minimumSystemVersion: "15.0",
                 architecture: ["arm64"],
                 codeSigningInfo: nil,
                 appStoreInfo: nil,

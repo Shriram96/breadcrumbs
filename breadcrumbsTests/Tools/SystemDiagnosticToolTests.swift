@@ -471,7 +471,7 @@ final class SystemDiagnosticToolTests: XCTestCase {
     func testSystemInformationCodable() throws {
         let systemInfo = SystemInformation(
             hostName: "TestHost",
-            osVersion: "macOS 14.0",
+            osVersion: "macOS 15.0",
             osBuild: "23A344",
             kernelVersion: "Darwin Kernel Version 23.0.0",
             architecture: "arm64",

@@ -67,7 +67,7 @@ final class MockAppCheckerTool: AITool, @unchecked Sendable {
         let filteredApps = filterApps(mockApps, with: input)
 
         let systemInfo = SystemInfo(
-            osVersion: "macOS 14.0",
+            osVersion: "macOS 15.0",
             architecture: "arm64",
             hostName: "MockMac.local",
             userName: "testuser"
@@ -169,7 +169,7 @@ final class MockAppCheckerTool: AITool, @unchecked Sendable {
                 isBackgroundAgent: false,
                 supportedFileTypes: ["html", "htm", "webarchive"],
                 urlSchemes: ["https", "http"],
-                minimumSystemVersion: "13.0",
+                minimumSystemVersion: "15.0",
                 architecture: ["arm64"],
                 codeSigningInfo: CodeSigningInfo(
                     isSigned: true,

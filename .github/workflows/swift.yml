@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: macos-latest
+    runs-on: macos-15
     
     steps:
     - name: Checkout code
@@ -60,7 +60,7 @@ jobs:
         fail_ci_if_error: false
 
   lint-and-format:
-    runs-on: macos-latest
+    runs-on: macos-15
     
     steps:
     - name: Checkout code
