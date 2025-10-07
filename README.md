@@ -328,17 +328,125 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Discussions**: [GitHub Discussions](https://github.com/yourusername/breadcrumbs/discussions)
 - **Documentation**: [Wiki](https://github.com/yourusername/breadcrumbs/wiki)
 
+## 🎯 Vision: AI-Powered Endpoint Self-Healing
+
+### The Enterprise Problem
+
+**Breadcrumbs POC addresses a critical enterprise challenge:** distributed macOS endpoints running business-critical applications with limited visibility and manual troubleshooting bottlenecks.
+
+**Pain Points:**
+- 📉 **Visibility Gap**: Users often can't articulate technical problems accurately
+- ⏱️ **Time-to-Resolution**: Manual diagnostics slow down issue resolution
+- 📊 **Scale Challenge**: IT teams can't manually support hundreds/thousands of endpoints
+- 💰 **Business Impact**: Downtime costs compound across distributed workforce
+
+### POC: Foundation for Distributed Intelligence
+
+This repository demonstrates the **endpoint agent** component of a larger distributed self-healing architecture. The POC validates:
+
+✅ **Protocol-Based Extensibility**: `AITool` and `AIModel` protocols enable pluggable intelligence and actions
+✅ **REST API for Agent Communication**: Vapor-based server proves endpoint-to-control-tower viability
+✅ **Async Tool Execution**: Non-blocking architecture supports background monitoring
+✅ **AI-Driven Diagnostics**: OpenAI integration demonstrates intelligent problem analysis
+✅ **Secure Credential Management**: Keychain integration for enterprise security requirements
+
+### Evolution Path: POC → Production
+
+This POC is **Phase 1** of a multi-phase evolution:
+
+**🔵 Phase 1: POC (Current) - Diagnostic Foundation**
+- AI-powered chat interface for system diagnostics
+- 4 diagnostic tools (VPN, DNS, App, System)
+- REST API for remote access
+- Manual tool invocation via AI
+
+**🟢 Phase 2: Enhanced Endpoint (3-6 months)**
+- Add 6+ remediation actions (restart app, clear cache, reconnect VPN)
+- Structured telemetry with rollback capability
+- Local decision engine with risk assessment
+- WebSocket streaming for real-time updates
+
+**🟡 Phase 3: Control Tower (6-12 months)**
+- Centralized fleet management server
+- Aggregated diagnostics across endpoints
+- Bidirectional agent communication protocol
+- Dashboard for IT administrators
+
+**🟣 Phase 4: Autonomous Self-Healing (12-18+ months)**
+- Local ML models for anomaly detection (Core ML)
+- Federated learning across fleet
+- Predictive diagnostics and preemptive actions
+- Multi-agent collaboration (endpoint ↔ control tower ↔ peer endpoints)
+- Zero-touch resolution with human-in-the-loop escalation
+
+### Why This Approach?
+
+**AI-Suitable Problem Characteristics:**
+- **Pattern Recognition**: Similar issues recur across fleet (VPN drops, app crashes)
+- **Context Complexity**: Diagnosis requires correlating logs, metrics, system state
+- **Evolving Patterns**: New issues emerge; static rules become stale
+- **Scale**: Manual expertise doesn't scale to 1000s of endpoints
+
+**Traditional Monitoring Falls Short:**
+- ❌ Static alerting creates noise, not actionable insights
+- ❌ Log aggregation requires manual analysis
+- ❌ Rule-based automation breaks with system updates
+- ❌ No learning from past resolutions
+
+**Breadcrumbs Vision:**
+- ✅ AI understands natural language problem descriptions
+- ✅ Automated diagnostics collect relevant context
+- ✅ Continuous learning improves accuracy over time
+- ✅ Coordinated remediation across distributed agents
+- ✅ Human oversight for high-risk actions
+
+### Technical Foundation
+
+The POC architecture validates every critical component needed for the full vision:
+
+| Component | POC Implementation | Enables Vision Capability |
+|-----------|-------------------|---------------------------|
+| **Protocol Abstraction** | `AIModel`, `AITool` | Pluggable AI providers, dynamic tool loading |
+| **Async Concurrency** | `async/await` throughout | Background monitoring, streaming telemetry |
+| **REST API** | Vapor HTTP server | Agent-to-agent communication protocol |
+| **Tool Registry** | Dynamic tool registration | User-defined tools, plugin marketplace |
+| **Secure Storage** | Keychain integration | Certificate-based agent authentication |
+
+**See [ARCHITECTURE.md](ARCHITECTURE.md)** for detailed POC-to-vision evolution mapping.
+
 ## 🔮 Roadmap
 
-### Upcoming Features
-- [ ] **Multiple AI Providers**: Support for Anthropic, Google, and other AI services
-- [ ] **Custom Tools**: User-defined diagnostic tools
-- [ ] **Plugin System**: Dynamic tool loading and management
-- [ ] **Cloud Integration**: Optional cloud storage for diagnostic history
-- [ ] **Advanced Analytics**: Usage patterns and system health trends
-- [ ] **Mobile Companion**: iOS app for remote monitoring
+### Phase 1: Enhanced Local Intelligence (Q1 2025)
+- [ ] **Remediation Actions**: Add 6 self-healing actions with rollback
+- [ ] **Structured Telemetry**: Replace string outputs with codable metrics
+- [ ] **Risk Assessment**: Local decision engine for safe automation
+- [ ] **Action History**: Track remediation attempts and outcomes
 
-### Performance Improvements
+### Phase 2: Control Tower Communication (Q2-Q3 2025)
+- [ ] **WebSocket Streaming**: Real-time bidirectional updates
+- [ ] **Control Tower Server**: Fleet management and aggregated insights
+- [ ] **Agent Protocol**: Semantic message types (telemetry, remediation, escalation)
+- [ ] **Admin Dashboard**: Web UI for IT administrators
+
+### Phase 3: Collaborative Intelligence (Q4 2025 - Q1 2026)
+- [ ] **Core ML Integration**: On-device anomaly detection
+- [ ] **Peer Coordination**: Agent-to-agent problem resolution
+- [ ] **Escalation Framework**: Confidence-based human-in-the-loop
+- [ ] **Shared Knowledge**: Cross-fleet solution caching
+
+### Phase 4: Autonomous Self-Healing (2026+)
+- [ ] **Predictive Diagnostics**: Prevent issues before they occur
+- [ ] **Federated Learning**: Privacy-preserving model improvement
+- [ ] **Zero-Touch Resolution**: Automatic fixes for low-risk issues
+- [ ] **Comprehensive Audit**: Full compliance trail
+
+### Developer Experience Improvements
+- [ ] **Multiple AI Providers**: Anthropic, Google, local models
+- [ ] **Custom Tools**: User-defined diagnostic tools
+- [ ] **Plugin System**: Dynamic tool marketplace
+- [ ] **Advanced Analytics**: Usage patterns and system health trends
+
+### Performance Optimizations
 - [ ] **Tool Caching**: Cache frequently used diagnostic results
 - [ ] **Streaming UI**: Real-time tool execution updates
 - [ ] **Background Monitoring**: Periodic system health checks
@@ -347,3 +455,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Made with ❤️ for the macOS community**
+
+*This POC demonstrates the foundational endpoint agent for a distributed AI-powered self-healing system. Every architectural decision supports evolution toward autonomous fleet management while maintaining immediate utility as a standalone diagnostic tool.*

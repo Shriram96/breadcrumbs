@@ -471,4 +471,404 @@ curl -X POST http://localhost:8181/api/v1/chat \
 
 ---
 
-This comprehensive feature set makes Breadcrumbs a powerful and versatile system diagnostic tool that combines the intelligence of AI with the depth of native macOS system integration.
+## 🎬 Use Case Scenarios: POC vs Vision
+
+### Scenario 1: VPN Connection Failure
+
+**Problem:** User's VPN connection drops unexpectedly, blocking access to business applications.
+
+#### 🔵 POC Behavior (Current)
+
+**Detection:**
+```
+User: "My VPN isn't working"
+AI: [Uses VPNDetectorTool]
+Result: "VPN Connection Status: Not Connected
+         Last Known: IKEv2, Interface: utun0
+         Disconnected Since: 2:45 PM"
+```
+
+**Action:** AI provides diagnostic information and troubleshooting suggestions
+```
+AI: "Your VPN is disconnected. Try these steps:
+     1. Check your network connection
+     2. Restart the VPN client
+     3. Check VPN credentials in System Settings"
+```
+
+**Outcome:** User receives accurate diagnostic information but must manually remediate
+
+**Limitations:**
+- Manual intervention required
+- No automatic remediation
+- No learning from resolution
+
+#### 🟢 Phase 2 Behavior: Enhanced Endpoint
+
+**Detection:** Same VPN detection tool
+**Action:** AI can execute remediation with user approval
+```
+AI: "VPN disconnected. I can try reconnecting automatically.
+     Action: Execute VPNReconnectAction
+     Risk Level: Low
+     Rollback: Available
+
+     Approve? (yes/no)"
+
+User: "yes"
+
+AI: [Executes VPNReconnectAction]
+    "VPN reconnection successful. Connection restored in 3.2s"
+```
+
+**Outcome:** Faster resolution with user oversight
+**Learning:** Action result logged for future reference
+
+#### 🟣 Vision Behavior: Autonomous Self-Healing
+
+**Predictive Detection:**
+```
+[Background monitoring detects]
+- VPN latency increasing (45ms → 180ms over 2 minutes)
+- Packet loss rising (0% → 5%)
+- Pattern matches "pre-disconnect anomaly" (confidence: 87%)
+
+[Autonomous agent reasoning]
+1. Local ML model predicts VPN disconnect in 30-60 seconds
+2. Preventive action: Preemptive reconnect recommended
+3. Risk assessment: Low risk, high success probability
+4. Historical data: 94% success rate for this pattern
+5. Decision: Execute automatically (below risk threshold)
+```
+
+**Action:**
+```
+[Agent executes preemptive reconnect]
+- Gracefully tears down degraded connection
+- Establishes new VPN tunnel
+- Validates connectivity
+- Total downtime: 0 seconds (seamless)
+```
+
+**Collaborative Intelligence:**
+```
+[Agent-to-control-tower sync]
+Endpoint: "Preemptive VPN reconnect executed"
+Control Tower: "Noted. 3 other endpoints experienced same pattern.
+                Investigating VPN server capacity"
+
+[Control Tower → Admin Console]
+Report: "VPN server load spike detected across 15% of fleet.
+         Recommend capacity upgrade or load balancing"
+```
+
+**Outcome:**
+- ✅ Issue prevented before user awareness
+- ✅ Zero downtime
+- ✅ Root cause identified fleet-wide
+- ✅ Proactive infrastructure recommendation
+
+**POC Foundation for Vision:**
+- `VPNDetectorTool` ([VPNDetectorTool.swift](breadcrumbs/Tools/VPNDetectorTool.swift)) provides structured VPN metrics
+- Async execution model supports background monitoring
+- REST API enables control tower communication
+
+---
+
+### Scenario 2: Business-Critical Application Crash Loop
+
+**Problem:** Slack app crashes repeatedly, preventing communication with team.
+
+#### 🔵 POC Behavior (Current)
+
+**Detection:**
+```
+User: "Slack keeps crashing"
+AI: [Uses SystemDiagnosticTool + AppCheckerTool]
+Result: "Found 5 crash reports for Slack in last 30 minutes
+         App Version: 4.35.126
+         macOS: 14.2.1
+         Common error: EXC_BAD_ACCESS (SIGSEGV)
+         Thread 0 crashed: libwebrtc.dylib"
+```
+
+**Action:** AI provides diagnostic analysis
+```
+AI: "Slack is crashing due to a WebRTC library issue.
+     Recommendations:
+     1. Clear Slack cache: ~/Library/Application Support/Slack
+     2. Update to latest version
+     3. Restart with safe mode
+
+     Would you like detailed crash log analysis?"
+```
+
+**Outcome:** User understands the problem but must manually fix
+**Limitations:** No automatic remediation, no cache clearing tool
+
+#### 🟡 Phase 2 Behavior: Remediation Actions
+
+**Detection:** Same diagnostic tools
+**Action:** AI offers automated remediation
+```
+AI: "Detected Slack crash loop (5 crashes in 30min).
+     Root cause: Corrupted WebRTC cache
+
+     Recommended actions:
+     1. ClearCacheAction (Slack) - Risk: Low
+     2. RestartAppAction (Slack) - Risk: None
+
+     Approve remediation sequence? (yes/no)"
+
+User: "yes"
+
+AI: [Executes ClearCacheAction]
+    - Backed up Slack cache to: /tmp/slack_backup_20250106
+    - Cleared cache: 847 MB freed
+    - Rollback available for 24 hours
+
+    [Executes RestartAppAction]
+    - Slack restarted successfully
+    - Monitoring for stability (5 minutes)
+
+    [After 5 minutes]
+    "Remediation successful. Slack running stable for 5 min.
+     No crashes detected."
+```
+
+**Outcome:** Issue resolved in <1 minute with user approval
+
+#### 🟣 Vision Behavior: Predictive and Collaborative
+
+**Autonomous Detection:**
+```
+[Background monitoring - endpoint agent]
+- Detected Slack crash #1 at 2:31 PM
+- Local ML classifier: Confidence 45% (wait for more data)
+- Continue monitoring
+
+[Crash #2 at 2:33 PM]
+- Pattern match: "cache corruption crash loop"
+- Confidence: 78%
+- Query control tower for similar incidents
+
+[Control tower response]
+- 12 other endpoints experienced same issue today
+- 100% resolved with ClearCacheAction
+- Recommended: Execute immediately
+- Confidence: 95%
+```
+
+**Autonomous Action:**
+```
+[Local agent decision]
+- Risk level: Low (cache clear + app restart)
+- Success probability: 95% (control tower data)
+- Business impact: High (communication tool)
+- Decision: Execute autonomously
+
+[Execution]
+1. ClearCacheAction (Slack) ✅
+2. RestartAppAction (Slack) ✅
+3. Validation: Monitor 5 minutes ✅
+
+[User notification]
+"🔧 Auto-resolved: Slack crash loop
+    Action taken: Cleared corrupted cache (847 MB)
+    Downtime: 8 seconds
+    Status: Stable
+    [View details] [Undo if needed]"
+```
+
+**Federated Learning:**
+```
+[Endpoint → Control Tower]
+"Slack crash loop resolved. Cache corruption confirmed.
+ Action: ClearCache + Restart
+ Success: Yes
+ Downtime: 8s"
+
+[Control Tower AI reasoning]
+- 13 endpoints now resolved (100% success rate)
+- Root cause: Slack 4.35.126 WebRTC bug
+- Recommendation: Fleet-wide preventive cache clear
+- Alert: Notify admin of Slack version issue
+
+[Control Tower → Admin Console]
+Report: "Slack 4.35.126 WebRTC cache corruption affecting 15% of fleet.
+         Auto-remediated 13 endpoints (100% success).
+         Recommend: Push Slack update to fleet.
+         Estimated impact: Prevent 50+ future incidents."
+
+[Control Tower → All Endpoints]
+"Preventive action: Clear Slack cache on all 4.35.126 installs
+ during next maintenance window"
+```
+
+**Outcome:**
+- ✅ Issue auto-resolved in 8 seconds
+- ✅ User minimally disrupted
+- ✅ Fleet-wide root cause identified
+- ✅ Preventive action across all endpoints
+- ✅ Admin alerted to version-specific bug
+
+**POC Foundation for Vision:**
+- `SystemDiagnosticTool` ([SystemDiagnosticTool.swift](breadcrumbs/Tools/SystemDiagnosticTool.swift)) collects crash reports
+- `AppCheckerTool` provides app version/status
+- Chat-based interface demonstrates AI reasoning transparency
+- Async architecture supports background crash monitoring
+
+---
+
+### Scenario 3: Network Connectivity Degradation
+
+**Problem:** User experiences slow network performance affecting productivity.
+
+#### 🔵 POC Behavior
+
+**Detection:**
+```
+User: "Why is my internet so slow?"
+AI: [Uses DNSReachabilityTool]
+Result: "DNS test to google.com:
+         Response time: 1,245ms (SLOW)
+         Packet loss: 12%
+
+         VPN Status: Connected
+         DNS Server: 10.0.0.1 (VPN DNS)"
+```
+
+**Action:** Diagnostic information only
+```
+AI: "High latency detected via VPN DNS.
+     Possible causes:
+     1. VPN server congestion
+     2. DNS server overload
+     3. Network path issues
+
+     Try: Disconnect VPN and retest"
+```
+
+**Outcome:** User troubleshoots manually
+
+#### 🟡 Phase 2 Behavior
+
+**Detection:** Same tools + structured metrics
+**Action:** Automated testing and remediation
+```
+AI: "High latency detected. Running diagnostic sequence...
+
+     [Test 1] Direct DNS (8.8.8.8): 45ms ✅
+     [Test 2] VPN DNS (10.0.0.1): 1,245ms ❌
+     [Test 3] VPN connectivity: 892ms ❌
+
+     Root cause: VPN path degradation
+
+     Recommended action: VPNReconnectAction
+     Approve? (yes/no)"
+
+User: "yes"
+
+AI: "VPN reconnected to different server
+     New response time: 52ms
+     Issue resolved"
+```
+
+#### 🟣 Vision Behavior
+
+**Predictive Detection:**
+```
+[Continuous monitoring]
+- Baseline DNS latency: 45-60ms
+- Current: 180ms (3x baseline)
+- Trend: Degrading over 10 minutes
+- Anomaly detected: "gradual performance degradation"
+
+[ML-powered root cause analysis]
+1. VPN latency: 150ms (normal: 20ms)
+2. Control tower query: "VPN server X performance?"
+3. Control tower: "VPN server X at 95% capacity, 25 endpoints affected"
+4. Recommended: Switch to VPN server Y (15% capacity)
+```
+
+**Autonomous Action:**
+```
+[Agent decision]
+- Issue: VPN server overload
+- Action: Reconnect to alternate server
+- Risk: Low (brief disconnect)
+- Timing: Execute during idle period (no active calls)
+
+[Execution during user coffee break]
+1. Detect user idle (5 minutes, no keyboard/mouse)
+2. Execute VPNReconnectAction with server preference
+3. Validate connectivity
+4. Resume monitoring
+
+[User returns]
+No notification needed - seamless performance restoration
+```
+
+**Fleet-Wide Coordination:**
+```
+[Control Tower orchestration]
+- Detected: VPN server X overload
+- Action: Load balance 25 endpoints to servers Y, Z
+- Execution: During idle periods over next 30 minutes
+- Result: Server X load reduced from 95% → 35%
+
+[Admin notification]
+"Auto-resolved: VPN server X capacity issue
+ Actions: Redistributed 25 endpoints
+ Downtime: 0 (idle-time execution)
+ Recommendation: Add VPN capacity for growth"
+```
+
+**Outcome:**
+- ✅ Performance issue auto-resolved
+- ✅ Zero user-visible downtime
+- ✅ Fleet-wide load balancing
+- ✅ Capacity planning recommendation
+
+**POC Foundation:**
+- `DNSReachabilityTool` provides latency metrics
+- `VPNDetectorTool` provides VPN server details
+- Async execution supports background monitoring
+- REST API enables control tower coordination
+
+---
+
+### Scenario Comparison Summary
+
+| Aspect | POC (Phase 1) | Enhanced (Phase 2) | Vision (Phase 4) |
+|--------|---------------|-------------------|------------------|
+| **Detection** | User-initiated chat | User-initiated + periodic checks | Continuous predictive monitoring |
+| **Diagnosis** | AI analyzes on request | AI analyzes + offers actions | AI predicts before failure |
+| **Remediation** | Manual user actions | Semi-automated (user approval) | Fully autonomous (low-risk) |
+| **Learning** | None | Local action history | Federated fleet-wide learning |
+| **Coordination** | Single endpoint | Single endpoint | Multi-endpoint + control tower |
+| **Downtime** | Minutes to hours | Seconds to minutes | Zero (predictive) or seconds |
+| **Human Role** | Troubleshooter | Approver | Oversight (high-risk only) |
+
+### ROI Trajectory
+
+**POC Value:**
+- Reduces diagnostic time from 30 minutes → 2 minutes (93% reduction)
+- Provides accurate root cause analysis
+- Demonstrates AI-powered diagnostics
+
+**Enhanced Endpoint Value:**
+- Reduces resolution time from 30 minutes → 5 minutes (83% reduction)
+- Semi-autonomous remediation reduces manual intervention
+- Local decision engine prevents dangerous actions
+
+**Vision Value:**
+- Prevents 80% of issues before user impact
+- Resolves remaining 20% in seconds autonomously
+- Fleet-wide learning compounds value over time
+- Admin team shifts from reactive firefighting to proactive optimization
+- Estimated TCO reduction: 60-70% for endpoint support
+
+---
+
+This comprehensive feature set makes Breadcrumbs a powerful and versatile system diagnostic tool that combines the intelligence of AI with the depth of native macOS system integration. The POC validates the architectural foundation for a distributed self-healing system while providing immediate standalone value.
