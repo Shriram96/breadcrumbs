@@ -1,86 +1,56 @@
 # GitHub Workflows
 
-This directory contains GitHub Actions workflows for the Breadcrumbs project.
+This directory contains a single, streamlined CI workflow for the Breadcrumbs project.
 
-## Workflows
+## Workflow
 
 ### 🚀 CI (`ci.yml`)
-Main CI orchestrator that determines which workflows should run based on file changes.
+Simple CI workflow that mirrors the development machine setup:
 
-### 🔨 Swift Build and Test (`swift.yml`)
-- Builds the Swift package using `swift build`
-- Runs unit tests with code coverage
-- Performs linting with SwiftLint
-- Checks code formatting
-- Uploads coverage reports to Codecov
-
-### 📱 Xcode Build and Test (`xcode.yml`)
-- Builds the macOS app using Xcode
-- Runs unit tests with code coverage
-- Runs UI tests
-- Creates app archives
-- Exports app for distribution
-- Uploads coverage reports to Codecov
-
-### 🔒 Security Scan (`security.yml`)
-- Performs security audits on dependencies
-- Scans for hardcoded secrets using TruffleHog
-- Runs CodeQL analysis for security vulnerabilities
-- Reviews dependencies for security issues
-- Runs weekly on schedule
-
-### 🚀 Release (`release.yml`)
-- Triggers on version tags (e.g., `v1.0.0`)
-- Builds release version of the app
-- Creates DMG for distribution
-- Creates GitHub releases with assets
-- Can be triggered manually with workflow_dispatch
+- **Build**: Uses `swift build` (same as dev machine)
+- **Test**: Uses `swift test --enable-code-coverage` (same as dev machine)
+- **Coverage**: Generates and uploads coverage reports to Codecov
+- **Lint**: Runs SwiftLint for code quality
+- **Format**: Checks code formatting with SwiftFormat
 
 ## Workflow Triggers
 
 ### Automatic Triggers
-- **Push to main/develop**: All workflows run
-- **Pull requests to main/develop**: All workflows run
-- **Version tags**: Release workflow runs
-- **Weekly schedule**: Security scan runs
+- **Push to main/develop**: CI runs automatically
+- **Pull requests to main/develop**: CI runs automatically
 
-### Manual Triggers
-- **Release workflow**: Can be triggered manually with a version input
+## What It Does
+
+1. **Checkout code** from the repository
+2. **Setup Swift 5.9** (matches development environment)
+3. **Cache dependencies** for faster builds
+4. **Build the package** using Swift Package Manager
+5. **Run tests with coverage** collection
+6. **Generate coverage report** in LCOV format
+7. **Upload coverage** to Codecov
+8. **Run SwiftLint** for code quality checks
+9. **Check formatting** with SwiftFormat
 
 ## Requirements
 
 ### Secrets
 - `GITHUB_TOKEN`: Automatically provided by GitHub
 
-### Files
-- `ExportOptions.plist`: Required for Xcode export functionality
-
-## Coverage Reports
-
-Code coverage is collected and uploaded to Codecov for both:
-- Swift Package Manager tests
-- Xcode tests
-
-## Security
-
-The security workflow includes:
-- Dependency vulnerability scanning
-- Secret detection
-- CodeQL static analysis
-- Dependency license checking
-
 ## Usage
 
-1. **Development**: Workflows run automatically on push/PR
-2. **Release**: Create a version tag (e.g., `v1.0.0`) to trigger release
-3. **Manual Release**: Use the "Actions" tab to manually trigger a release
+The workflow runs automatically on:
+1. **Push to main/develop branches**
+2. **Pull requests to main/develop branches**
+
+No manual intervention required - it mirrors your local development workflow.
 
 ## Troubleshooting
 
 ### Common Issues
-- **Xcode version**: Workflows use Xcode 15.4, update if needed
-- **Coverage upload**: Ensure Codecov integration is set up
-- **Export options**: Verify `ExportOptions.plist` exists and is valid
+- **Swift version**: Uses Swift 5.9 (matches .swift-version file)
+- **Coverage upload**: Automatically uploads to Codecov
+- **Linting**: Uses project's .swiftlint.yml configuration
+- **Formatting**: Uses project's .swiftformat configuration
 
 ### Workflow Status
 Check the "Actions" tab in GitHub to see workflow status and logs.
