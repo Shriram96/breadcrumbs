@@ -197,7 +197,7 @@ struct SettingsView: View {
     // MARK: - Private Methods
 
     private func loadAPIKey() {
-        #if UNIT_TESTING
+        #if UNIT_TESTS
         // Skip keychain operations during unit tests to avoid system prompts
         hasExistingKey = false
         tempApiKey = ""
@@ -245,7 +245,7 @@ struct SettingsView: View {
     }
 
     private func saveAPIKey() {
-        #if UNIT_TESTING
+        #if UNIT_TESTS
         // Skip keychain operations during unit tests to avoid system prompts
         hasExistingKey = true
         showingSaved = true
@@ -308,7 +308,7 @@ struct SettingsView: View {
     }
 
     private func clearAPIKey() {
-        #if UNIT_TESTING
+        #if UNIT_TESTS
         // Skip keychain operations during unit tests to avoid system prompts
         tempApiKey = ""
         hasExistingKey = false
