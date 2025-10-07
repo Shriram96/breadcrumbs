@@ -144,7 +144,7 @@ final class VPNDetectorToolTests: XCTestCase {
         let timestamp = Date()
         
         // When
-        let output = VPNDetectorOutput(
+        let output = TestUtilities.createTestVPNDetectorOutput(
             isConnected: isConnected,
             vpnType: vpnType,
             interfaceName: interfaceName,
@@ -166,7 +166,7 @@ final class VPNDetectorToolTests: XCTestCase {
     
     func testVPNDetectorOutputToFormattedString() {
         // Given
-        let output = VPNDetectorOutput(
+        let output = TestUtilities.createTestVPNDetectorOutput(
             isConnected: true,
             vpnType: "IKEv2",
             interfaceName: "utun0",
@@ -192,7 +192,7 @@ final class VPNDetectorToolTests: XCTestCase {
     
     func testVPNDetectorOutputDisconnectedToFormattedString() {
         // Given
-        let output = VPNDetectorOutput(
+        let output = TestUtilities.createTestVPNDetectorOutput(
             isConnected: false,
             vpnType: nil,
             interfaceName: nil,
@@ -233,7 +233,7 @@ final class VPNDetectorToolTests: XCTestCase {
     
     func testVPNDetectorOutputToolOutputConformance() {
         // Given
-        let output = VPNDetectorOutput(
+        let output = TestUtilities.createTestVPNDetectorOutput(
             isConnected: true,
             vpnType: "IKEv2",
             interfaceName: "utun0",
@@ -327,7 +327,7 @@ final class VPNDetectorToolTests: XCTestCase {
     
     func testVPNDetectorOutputSendable() {
         // This test verifies that VPNDetectorOutput can be used in concurrent contexts
-        let output = VPNDetectorOutput(
+        let output = TestUtilities.createTestVPNDetectorOutput(
             isConnected: true,
             vpnType: "IKEv2",
             interfaceName: "utun0",

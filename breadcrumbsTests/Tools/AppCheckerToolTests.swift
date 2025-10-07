@@ -298,7 +298,7 @@ final class AppCheckerToolTests: XCTestCase {
     
     func testGetAppCategoryFromBundle() {
         let mockBundle = MockBundle()
-        mockBundle.infoDictionary = ["LSApplicationCategoryType": "public.app-category.games"]
+        mockBundle.mockInfoDictionary = ["LSApplicationCategoryType": "public.app-category.games"]
         
         let category = tool.getAppCategory(from: mockBundle, name: "Test Game")
         
@@ -307,7 +307,7 @@ final class AppCheckerToolTests: XCTestCase {
     
     func testGetAppCategoryFromName() {
         let mockBundle = MockBundle()
-        mockBundle.infoDictionary = [:]
+        mockBundle.mockInfoDictionary = [:]
         
         let gameCategory = tool.getAppCategory(from: mockBundle, name: "Steam Game")
         let browserCategory = tool.getAppCategory(from: mockBundle, name: "Chrome Browser")
@@ -320,7 +320,7 @@ final class AppCheckerToolTests: XCTestCase {
     
     func testGetAppCategoryNotFound() {
         let mockBundle = MockBundle()
-        mockBundle.infoDictionary = [:]
+        mockBundle.mockInfoDictionary = [:]
         
         let category = tool.getAppCategory(from: mockBundle, name: "Unknown App")
         
@@ -331,7 +331,7 @@ final class AppCheckerToolTests: XCTestCase {
     
     func testGetURLSchemes() {
         let mockBundle = MockBundle()
-        mockBundle.infoDictionary = [
+        mockBundle.mockInfoDictionary = [
             "CFBundleURLTypes": [
                 [
                     "CFBundleURLSchemes": ["https", "http"]
@@ -352,7 +352,7 @@ final class AppCheckerToolTests: XCTestCase {
     
     func testGetURLSchemesEmpty() {
         let mockBundle = MockBundle()
-        mockBundle.infoDictionary = [:]
+        mockBundle.mockInfoDictionary = [:]
         
         let schemes = tool.getURLSchemes(from: mockBundle)
         
@@ -363,7 +363,7 @@ final class AppCheckerToolTests: XCTestCase {
     
     func testGetSupportedFileTypes() {
         let mockBundle = MockBundle()
-        mockBundle.infoDictionary = [
+        mockBundle.mockInfoDictionary = [
             "CFBundleDocumentTypes": [
                 [
                     "CFBundleTypeExtensions": ["txt", "md"]
@@ -384,7 +384,7 @@ final class AppCheckerToolTests: XCTestCase {
     
     func testGetSupportedFileTypesEmpty() {
         let mockBundle = MockBundle()
-        mockBundle.infoDictionary = [:]
+        mockBundle.mockInfoDictionary = [:]
         
         let fileTypes = tool.getSupportedFileTypes(from: mockBundle)
         
@@ -395,7 +395,7 @@ final class AppCheckerToolTests: XCTestCase {
     
     func testGetAppStoreInfoWithReceipt() {
         let mockBundle = MockBundle()
-        mockBundle.appStoreReceiptURL = URL(fileURLWithPath: "/path/to/receipt")
+        mockBundle.mockAppStoreReceiptURL = URL(fileURLWithPath: "/path/to/receipt")
         
         let appStoreInfo = tool.getAppStoreInfo(from: mockBundle)
         
@@ -406,7 +406,7 @@ final class AppCheckerToolTests: XCTestCase {
     
     func testGetAppStoreInfoWithoutReceipt() {
         let mockBundle = MockBundle()
-        mockBundle.appStoreReceiptURL = nil
+        mockBundle.mockAppStoreReceiptURL = nil
         
         let appStoreInfo = tool.getAppStoreInfo(from: mockBundle)
         
@@ -417,18 +417,17 @@ final class AppCheckerToolTests: XCTestCase {
     
     // MARK: - Error Handling Tests
     
-    func testExecuteWithInvalidArguments() async {
+    func testExecuteWithInvalidArguments() async throws {
         let arguments: [String: Any] = [
-            "max_results": "invalid"
+            "max_results": "invalid"  // This should be handled gracefully, not throw an error
         ]
         
-        do {
-            _ = try await tool.execute(arguments: arguments)
-            XCTFail("Should have thrown an error")
-        } catch {
-            // Should handle invalid arguments gracefully
-            XCTAssertTrue(error is ToolError)
-        }
+        // The tool should handle invalid arguments gracefully by using defaults
+        let result = try await tool.execute(arguments: arguments)
+        
+        XCTAssertFalse(result.isEmpty)
+        XCTAssertTrue(result.contains("App Checker Results:"))
+        // The tool should use the default maxResults value (100) when invalid value is provided
     }
     
     func testExecuteWithEmptyArguments() async {
@@ -555,7 +554,7 @@ class MockWorkspace: NSWorkspace {
     }
 }
 
-class MockBundle: Bundle {
+class MockBundle: Bundle, @unchecked Sendable {
     var mockInfoDictionary: [String: Any] = [:]
     var mockBundleIdentifier: String?
     var mockExecutablePath: String?

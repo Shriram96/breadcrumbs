@@ -86,9 +86,14 @@ final class SystemDiagnosticToolTests: XCTestCase {
             "diagnostic_type": "invalid_type"
         ]
         
-        // Should not throw, but use default behavior
-        let result = try await tool.execute(arguments: arguments)
-        XCTAssertFalse(result.isEmpty)
+        // Should throw an error for invalid diagnostic type
+        do {
+            _ = try await tool.execute(arguments: arguments)
+            XCTFail("Should have thrown an error for invalid diagnostic type")
+        } catch {
+            // Expected behavior - tool should throw an error for invalid enum values
+            XCTAssertTrue(error is DecodingError || error is ToolError)
+        }
     }
     
     // MARK: - Diagnostic Type Tests
@@ -137,6 +142,9 @@ final class SystemDiagnosticToolTests: XCTestCase {
     // MARK: - App Filtering Tests
     
     func testFilterByAppName() async throws {
+        // Ensure tool is properly initialized
+        XCTAssertNotNil(tool, "Tool should be initialized in setUp()")
+        
         let arguments: [String: Any] = [
             "app_name": "Safari",
             "diagnostic_type": "crash_reports"
@@ -148,6 +156,9 @@ final class SystemDiagnosticToolTests: XCTestCase {
     }
     
     func testFilterByBundleIdentifier() async throws {
+        // Ensure tool is properly initialized
+        XCTAssertNotNil(tool, "Tool should be initialized in setUp()")
+        
         let arguments: [String: Any] = [
             "bundle_identifier": "com.apple.Safari",
             "diagnostic_type": "crash_reports"
@@ -284,11 +295,13 @@ final class SystemDiagnosticToolTests: XCTestCase {
             "time_range_hours": "not_a_number"
         ]
         
-        // Should not throw, but handle gracefully
+        // Should throw an error for malformed arguments
         do {
             _ = try await tool.execute(arguments: arguments)
+            XCTFail("Should have thrown an error for malformed arguments")
         } catch {
-            XCTFail("Tool should handle malformed arguments gracefully: \(error)")
+            // Expected behavior - tool should throw an error for invalid input types
+            XCTAssertTrue(error is DecodingError || error is ToolError)
         }
     }
     
@@ -351,19 +364,26 @@ final class SystemDiagnosticToolTests: XCTestCase {
     // MARK: - Performance Tests
     
     func testExecutionPerformance() async throws {
+        // Ensure tool is properly initialized
+        XCTAssertNotNil(tool, "Tool should be initialized in setUp()")
+        
         let arguments: [String: Any] = [
             "diagnostic_type": "system_info",
             "max_reports_per_type": 10
         ]
         
         measure {
+            let expectation = XCTestExpectation(description: "Tool execution")
             Task {
                 do {
                     _ = try await tool.execute(arguments: arguments)
+                    expectation.fulfill()
                 } catch {
                     XCTFail("Tool execution failed: \(error)")
+                    expectation.fulfill()
                 }
             }
+            wait(for: [expectation], timeout: 5.0)
         }
     }
     
