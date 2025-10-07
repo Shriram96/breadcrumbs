@@ -11,7 +11,7 @@ on:
 
 jobs:
   security-scan:
-    runs-on: macos-15
+    runs-on: macos-latest
     
     steps:
     - name: Checkout code

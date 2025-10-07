@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: macos-15
+    runs-on: macos-latest
     
     steps:
     - name: Checkout code
@@ -82,7 +82,7 @@ jobs:
           -exportOptionsPlist ExportOptions.plist || echo "Export options plist not found, skipping export"
 
   integration-tests:
-    runs-on: macos-15
+    runs-on: macos-latest
     needs: build-and-test
     
     steps:
