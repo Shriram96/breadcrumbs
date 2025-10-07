@@ -30,7 +30,7 @@ class KeychainHelper: KeychainProtocol {
     /// - Returns: True if successful, false otherwise
     @discardableResult
     func save(_ value: String, forKey key: String, requireBiometric: Bool = false) -> Bool {
-        #if UNIT_TESTING
+        #if UNIT_TESTS
         // Skip actual keychain operations during unit tests to avoid system prompts
         return true
         #else
@@ -71,7 +71,7 @@ class KeychainHelper: KeychainProtocol {
     ///   - prompt: Optional prompt message for biometric authentication
     /// - Returns: The stored string, or nil if not found or authentication failed
     func get(forKey key: String, prompt: String? = nil) -> String? {
-        #if UNIT_TESTING
+        #if UNIT_TESTS
         // Skip actual keychain operations during unit tests to avoid system prompts
         // Return a mock value for testing
         return "mock_api_key_for_testing"
@@ -110,7 +110,7 @@ class KeychainHelper: KeychainProtocol {
     /// - Returns: True if successful or item doesn't exist, false if error
     @discardableResult
     func delete(forKey key: String) -> Bool {
-        #if UNIT_TESTING
+        #if UNIT_TESTS
         // Skip actual keychain operations during unit tests to avoid system prompts
         return true
         #else
@@ -140,7 +140,7 @@ class KeychainHelper: KeychainProtocol {
     /// - Returns: True if successful, false otherwise
     @discardableResult
     func update(_ value: String, forKey key: String, requireBiometric: Bool = false) -> Bool {
-        #if UNIT_TESTING
+        #if UNIT_TESTS
         // Skip actual keychain operations during unit tests to avoid system prompts
         return true
         #else
@@ -184,7 +184,7 @@ class KeychainHelper: KeychainProtocol {
     /// Check if biometric authentication is available on the device
     /// - Returns: True if Touch ID/Face ID is available and enrolled
     func isBiometricAuthenticationAvailable() -> Bool {
-        #if UNIT_TESTING
+        #if UNIT_TESTS
         // Skip biometric checks during unit tests to avoid prompts
         return false
         #else
@@ -204,7 +204,7 @@ class KeychainHelper: KeychainProtocol {
     /// Get the type of biometric authentication available
     /// - Returns: String describing the biometric type (Touch ID, Face ID, etc.)
     func getBiometricType() -> String {
-        #if UNIT_TESTING
+        #if UNIT_TESTS
         // Return mock biometric type during unit tests
         return "Touch ID"
         #else
@@ -235,7 +235,7 @@ class KeychainHelper: KeychainProtocol {
     ///   - reason: The reason for authentication (shown to user)
     ///   - completion: Completion handler with success/failure result
     func authenticateWithBiometrics(reason: String, completion: @escaping (Bool, Error?) -> Void) {
-        #if UNIT_TESTING
+        #if UNIT_TESTS
         // Skip biometric authentication during unit tests to avoid prompts
         DispatchQueue.main.async {
             completion(true, nil)

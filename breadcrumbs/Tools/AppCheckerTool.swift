@@ -363,7 +363,7 @@ struct AppCheckerTool: AITool {
     
     // MARK: - Private Methods
     
-    private func parseInput(from arguments: [String: Any]) -> AppCheckerInput {
+    internal func parseInput(from arguments: [String: Any]) -> AppCheckerInput {
         return AppCheckerInput(
             appName: arguments["app_name"] as? String,
             bundleIdentifier: arguments["bundle_identifier"] as? String,
@@ -374,7 +374,7 @@ struct AppCheckerTool: AITool {
         )
     }
     
-    private func buildQueryString(from input: AppCheckerInput) -> String {
+    internal func buildQueryString(from input: AppCheckerInput) -> String {
         var parts: [String] = []
         
         if let appName = input.appName {
@@ -455,7 +455,7 @@ struct AppCheckerTool: AITool {
     }
     
     private func getAllInstalledApps(includeSystemApps: Bool) async throws -> [URL] {
-        return await Task.detached {
+        return try await Task.detached {
             var appURLs: [URL] = []
 
             // Standard application directories
@@ -630,7 +630,7 @@ struct AppCheckerTool: AITool {
         }.value
     }
 
-    private func getSupportedFileTypes(from bundle: Bundle) -> [String] {
+    internal func getSupportedFileTypes(from bundle: Bundle) -> [String] {
         guard let documentTypes = bundle.object(forInfoDictionaryKey: "CFBundleDocumentTypes") as? [[String: Any]] else {
             return []
         }
@@ -645,7 +645,7 @@ struct AppCheckerTool: AITool {
         return fileTypes
     }
     
-    private func getURLSchemes(from bundle: Bundle) -> [String] {
+    internal func getURLSchemes(from bundle: Bundle) -> [String] {
         guard let urlTypes = bundle.object(forInfoDictionaryKey: "CFBundleURLTypes") as? [[String: Any]] else {
             return []
         }
@@ -736,7 +736,7 @@ struct AppCheckerTool: AITool {
         }.value
     }
     
-    private func extractSigningIdentity(from output: String) -> String? {
+    internal func extractSigningIdentity(from output: String) -> String? {
         let lines = output.components(separatedBy: .newlines)
         for line in lines {
             if line.contains("Authority=") {
@@ -749,7 +749,7 @@ struct AppCheckerTool: AITool {
         return nil
     }
     
-    private func extractTeamIdentifier(from output: String) -> String? {
+    internal func extractTeamIdentifier(from output: String) -> String? {
         let lines = output.components(separatedBy: .newlines)
         for line in lines {
             if line.contains("TeamIdentifier=") {
@@ -762,7 +762,7 @@ struct AppCheckerTool: AITool {
         return nil
     }
     
-    private func getAppStoreInfo(from bundle: Bundle) -> AppStoreInfo? {
+    internal func getAppStoreInfo(from bundle: Bundle) -> AppStoreInfo? {
         // Check if it's an App Store app by looking for receipt
         let receiptPath = bundle.appStoreReceiptURL?.path
         let isAppStoreApp = receiptPath != nil
@@ -788,7 +788,7 @@ struct AppCheckerTool: AITool {
         )
     }
     
-    private func getAppCategory(from bundle: Bundle, name: String) -> String? {
+    internal func getAppCategory(from bundle: Bundle, name: String) -> String? {
         // Try to determine category from bundle info or name patterns
         if let category = bundle.object(forInfoDictionaryKey: "LSApplicationCategoryType") as? String {
             return category
@@ -814,7 +814,7 @@ struct AppCheckerTool: AITool {
         return nil
     }
     
-    private func filterApps(_ apps: [AppInfo], with input: AppCheckerInput) -> [AppInfo] {
+    internal func filterApps(_ apps: [AppInfo], with input: AppCheckerInput) -> [AppInfo] {
         return apps.filter { app in
             // Filter by app name
             if let appName = input.appName {
@@ -855,7 +855,7 @@ struct AppCheckerTool: AITool {
         }
     }
     
-    private func getSystemInfo() -> SystemInfo {
+    internal func getSystemInfo() -> SystemInfo {
         let processInfo = ProcessInfo.processInfo
         let hostName = processInfo.hostName
         let userName = NSUserName()

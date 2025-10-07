@@ -443,7 +443,7 @@ final class SystemDiagnosticTool: AITool {
         
         let diagnosticType = input.diagnosticType ?? .all
         let timeRange = TimeInterval((input.timeRangeHours ?? 24) * 3600)
-        let maxReports = input.maxReportsPerType ?? 50
+        let maxReports = max(1, input.maxReportsPerType ?? 50)  // Ensure maxReports is at least 1
         
         if diagnosticType == .all || diagnosticType == .crashReports {
             crashReports = try await collectCrashReports(
