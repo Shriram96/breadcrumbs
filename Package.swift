@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 5.10
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -24,8 +24,8 @@ let package = Package(
         // Swift ArgumentParser for CLI - match Xcode project version
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.4.0"),
         
-        // Swift Async DNS Resolver for DNS queries - match Xcode project version
-        .package(url: "https://github.com/apple/swift-async-dns-resolver", from: "0.4.0"),
+        // Swift Async DNS Resolver for DNS queries - temporarily disabled due to CI issues
+        // .package(url: "https://github.com/apple/swift-async-dns-resolver", from: "0.4.0"),
     ],
     targets: [
         .target(
@@ -34,7 +34,7 @@ let package = Package(
                 .product(name: "OpenAI", package: "OpenAI"),
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
-                .product(name: "AsyncDNSResolver", package: "swift-async-dns-resolver"),
+                // .product(name: "AsyncDNSResolver", package: "swift-async-dns-resolver"),
             ],
             path: "breadcrumbs",
             exclude: [
@@ -44,9 +44,7 @@ let package = Package(
                 "breadcrumbsApp.swift"
             ],
             swiftSettings: [
-                .enableUpcomingFeature("MemberImportVisibility"),
                 .define("SWIFT_APPROACHABLE_CONCURRENCY"),
-                .define("SWIFT_DEFAULT_ACTOR_ISOLATION"),
             ]
         ),
         .testTarget(
