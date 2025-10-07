@@ -25,7 +25,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.4.0"),
         
         // Swift Async DNS Resolver for DNS queries - temporarily disabled due to CI issues
-        // .package(url: "https://github.com/apple/swift-async-dns-resolver", from: "0.4.0"),
+        .package(url: "https://github.com/apple/swift-async-dns-resolver", from: "0.4.0"),
     ],
     targets: [
         .target(
@@ -34,7 +34,7 @@ let package = Package(
                 .product(name: "OpenAI", package: "OpenAI"),
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
-                // .product(name: "AsyncDNSResolver", package: "swift-async-dns-resolver"),
+                .product(name: "AsyncDNSResolver", package: "swift-async-dns-resolver"),
             ],
             path: "breadcrumbs",
             exclude: [
