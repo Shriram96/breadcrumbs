@@ -10,6 +10,7 @@ import Foundation
 // MARK: - KeychainProtocol
 
 /// Protocol defining keychain operations for dependency injection and testing
+@MainActor
 protocol KeychainProtocol {
     func save(_ value: String, forKey key: String, requireBiometric: Bool) -> Bool
     func get(forKey key: String, prompt: String?) -> String?

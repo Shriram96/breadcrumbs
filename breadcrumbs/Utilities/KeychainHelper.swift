@@ -13,6 +13,7 @@ import Security
 // MARK: - KeychainHelper
 
 /// Helper class for storing and retrieving sensitive data from macOS Keychain
+@MainActor
 final class KeychainHelper: KeychainProtocol {
     // MARK: Lifecycle
 
@@ -263,7 +264,7 @@ final class KeychainHelper: KeychainProtocol {
 
             context
                 .evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, error in
-                    DispatchQueue.main.async {
+                    Task { @MainActor in
                         completion(success, error)
                     }
                 }

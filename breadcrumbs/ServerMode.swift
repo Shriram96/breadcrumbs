@@ -49,7 +49,7 @@ struct BreadcrumbsServer: AsyncParsableCommand {
         Logger.server("Daemon mode: \(daemon)")
 
         // Create AI model (you'll need to provide API key from environment or keychain)
-        let openAIModel = try createOpenAIModel()
+        let openAIModel = try await MainActor.run { try createOpenAIModel() }
 
         // Create and start Vapor HTTP server
         let serviceManager = await ServiceManager(aiModel: openAIModel, toolRegistry: .shared)
@@ -93,6 +93,7 @@ struct BreadcrumbsServer: AsyncParsableCommand {
 
     // MARK: Private
 
+    @MainActor
     private func createOpenAIModel() throws -> OpenAIModel {
         // Try to get API key from environment first
         if let apiKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"] {

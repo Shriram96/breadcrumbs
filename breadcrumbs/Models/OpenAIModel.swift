@@ -7,6 +7,7 @@
 
 import Foundation
 import OpenAI
+import NIOConcurrencyHelpers
 
 /// OpenAI implementation of the AIModel protocol
 /// Uses the MacPaw/OpenAI Swift package for API communication
@@ -160,10 +161,10 @@ final class OpenAIModel: AIModel {
     /// Execute streaming chat request with async/await
     private func executeChatStream(
         query: ChatQuery,
-        onChunk: @escaping (String) -> Void
+        onChunk: @escaping @Sendable (String) -> Void
     ) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            var hasResumed = false
+            let hasResumed = NIOLockedValueBox(false)
 
             _ = client.chatsStream(query: query) { result in
                 switch result {
@@ -174,22 +175,40 @@ final class OpenAIModel: AIModel {
                     }
 
                 case let .failure(error):
-                    if !hasResumed {
-                        hasResumed = true
-                        continuation.resume(throwing: error)
+                    if !hasResumed.withLockedValue({ value in
+                        if !value {
+                            value = true
+                            return true
+                        }
+                        return false
+                    }) {
+                        return
                     }
+                    continuation.resume(throwing: error)
                 }
             } completion: { error in
                 if let error = error {
-                    if !hasResumed {
-                        hasResumed = true
-                        continuation.resume(throwing: error)
+                    if !hasResumed.withLockedValue({ value in
+                        if !value {
+                            value = true
+                            return true
+                        }
+                        return false
+                    }) {
+                        return
                     }
+                    continuation.resume(throwing: error)
                 } else {
-                    if !hasResumed {
-                        hasResumed = true
-                        continuation.resume()
+                    if !hasResumed.withLockedValue({ value in
+                        if !value {
+                            value = true
+                            return true
+                        }
+                        return false
+                    }) {
+                        return
                     }
+                    continuation.resume()
                 }
             }
         }
@@ -259,7 +278,7 @@ final class OpenAIModel: AIModel {
                         "OpenAIModel.convertMessagesToOpenAI: Converting tool message with toolCallId: \(toolCallID)"
                     )
                 return .tool(
-                    .init(content: .textContent(message.content), toolCallID: toolCallID)
+                    .init(content: .textContent(message.content), toolCallId: toolCallID)
                 )
             }
         }
@@ -336,7 +355,7 @@ final class OpenAIModel: AIModel {
         // Add enum values if present (as additionalProperties)
         if let enumValues = dict["enum"] as? [String] {
             // Store enum values as a nested property
-            let enumSchemas = enumValues.map { value in
+            let _ = enumValues.map { value in
                 JSONSchema(.const(value))
             }
             // For now, we'll skip enum handling as the API doesn't have direct support

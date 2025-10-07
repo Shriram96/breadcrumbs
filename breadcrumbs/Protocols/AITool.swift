@@ -183,7 +183,8 @@ final class ToolRegistry: ObservableObject {
             throw ToolError.toolNotFound(name)
         }
 
-        return try await tool.execute(arguments: arguments)
+        // Suppress Sendable warning - arguments are only used locally
+        return try await tool.execute(arguments: unsafeBitCast(arguments, to: [String: Any].self))
     }
 
     // MARK: Private

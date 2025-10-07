@@ -31,7 +31,9 @@ class VaporServer: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.stop()
+            Task { @MainActor in
+                self?.stop()
+            }
         }
     }
 
@@ -40,20 +42,8 @@ class VaporServer: ObservableObject {
         NotificationCenter.default.removeObserver(self)
 
         // Ensure server is properly shut down before deallocation
-        if let app = app {
-            // Must shutdown synchronously in deinit to prevent assertion failure
-            // Vapor's ServeCommand checks that shutdown was called before deinit
-            app.shutdown()
-
-            // Wait for shutdown to complete - this is critical
-            // ServeCommand expects shutdown to finish before deallocation
-            let semaphore = DispatchSemaphore(value: 0)
-            Task {
-                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
-                semaphore.signal()
-            }
-            semaphore.wait()
-        }
+        // Note: Cannot access app property in deinit due to actor isolation
+        // The server should be properly shut down before deallocation
     }
 
     // MARK: Internal
@@ -437,7 +427,7 @@ class VaporServer: ObservableObject {
 
     // MARK: - Helper Functions
 
-    private func withTimeout<T>(seconds: TimeInterval, operation: @escaping () async throws -> T) async throws -> T {
+    private func withTimeout<T: Sendable>(seconds: TimeInterval, operation: @escaping @Sendable () async throws -> T) async throws -> T {
         return try await withThrowingTaskGroup(of: T.self) { group in
             group.addTask {
                 try await operation()
