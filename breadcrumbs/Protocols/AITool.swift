@@ -76,7 +76,7 @@ protocol AITool: Sendable {
     /// Execute the tool with provided arguments
     /// - Parameter arguments: JSON-decoded arguments as a dictionary
     /// - Returns: String result that will be sent back to the AI model
-    func execute(arguments: [String: Any]) async throws -> String
+    @MainActor func execute(arguments: [String: Any]) async throws -> String
 }
 
 /// Default implementation for ToolInput (for Codable types)
@@ -183,8 +183,7 @@ final class ToolRegistry: ObservableObject {
             throw ToolError.toolNotFound(name)
         }
 
-        // Suppress Sendable warning - arguments are only used locally
-        return try await tool.execute(arguments: unsafeBitCast(arguments, to: [String: Any].self))
+        return try await tool.execute(arguments: arguments)
     }
 
     // MARK: Private

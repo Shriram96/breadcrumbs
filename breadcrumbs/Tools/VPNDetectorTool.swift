@@ -138,7 +138,7 @@ struct VPNDetectorTool: AITool {
         ])
     }
 
-    func execute(arguments: [String: Any]) async throws -> String {
+    @MainActor func execute(arguments: [String: Any]) async throws -> String {
         Logger.tools("VPNDetectorTool.execute called with arguments: \(arguments)")
 
         // Parse input

@@ -447,7 +447,7 @@ final class SystemDiagnosticTool: AITool {
         ])
     }
 
-    func execute(arguments: [String: Any]) async throws -> String {
+    @MainActor func execute(arguments: [String: Any]) async throws -> String {
         Logger.tools("SystemDiagnosticTool.execute: Starting with arguments: \(arguments)")
 
         // Parse input

@@ -151,7 +151,7 @@ struct DNSReachabilityTool: AITool {
         ])
     }
 
-    func execute(arguments: [String: Any]) async throws -> String {
+    @MainActor func execute(arguments: [String: Any]) async throws -> String {
         Logger.tools("DNSReachabilityTool.execute called with arguments: \(arguments)")
 
         // Parse input

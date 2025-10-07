@@ -45,7 +45,6 @@ let package = Package(
             ],
             swiftSettings: [
                 .define("SWIFT_APPROACHABLE_CONCURRENCY"),
-                .enableUpcomingFeature("StrictConcurrency"),
             ]
         ),
         .testTarget(

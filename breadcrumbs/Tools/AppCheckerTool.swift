@@ -347,7 +347,7 @@ struct AppCheckerTool: AITool {
         ])
     }
 
-    func execute(arguments: [String: Any]) async throws -> String {
+    @MainActor func execute(arguments: [String: Any]) async throws -> String {
         Logger.tools("AppCheckerTool.execute called with arguments: \(arguments)")
 
         // Parse input
