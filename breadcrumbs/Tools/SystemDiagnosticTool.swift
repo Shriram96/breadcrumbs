@@ -5,39 +5,15 @@
 //  Comprehensive system diagnostic report collector using native macOS APIs
 //
 
-import Foundation
 import AppKit
-import System
+import Foundation
 import os
+import System
 
-// MARK: - Input/Output Models
+// MARK: - SystemDiagnosticInput
 
 /// Input model for system diagnostic queries
 struct SystemDiagnosticInput: ToolInput, Codable {
-    /// Specific app name or bundle identifier to focus on (optional)
-    let appName: String?
-    
-    /// Bundle identifier to focus on (optional)
-    let bundleIdentifier: String?
-    
-    /// Type of diagnostic information to collect
-    let diagnosticType: DiagnosticType?
-    
-    /// Time range for reports (in hours, default: 24)
-    let timeRangeHours: Int?
-    
-    /// Whether to include system-level reports
-    let includeSystemReports: Bool?
-    
-    /// Whether to include user-level reports
-    let includeUserReports: Bool?
-    
-    /// Whether to collect app samples
-    let collectAppSamples: Bool?
-    
-    /// Maximum number of reports to return per type (default: 50)
-    let maxReportsPerType: Int?
-    
     enum CodingKeys: String, CodingKey {
         case appName = "app_name"
         case bundleIdentifier = "bundle_identifier"
@@ -48,19 +24,48 @@ struct SystemDiagnosticInput: ToolInput, Codable {
         case collectAppSamples = "collect_app_samples"
         case maxReportsPerType = "max_reports_per_type"
     }
-    
+
+    /// Specific app name or bundle identifier to focus on (optional)
+    let appName: String?
+
+    /// Bundle identifier to focus on (optional)
+    let bundleIdentifier: String?
+
+    /// Type of diagnostic information to collect
+    let diagnosticType: DiagnosticType?
+
+    /// Time range for reports (in hours, default: 24)
+    let timeRangeHours: Int?
+
+    /// Whether to include system-level reports
+    let includeSystemReports: Bool?
+
+    /// Whether to include user-level reports
+    let includeUserReports: Bool?
+
+    /// Whether to collect app samples
+    let collectAppSamples: Bool?
+
+    /// Maximum number of reports to return per type (default: 50)
+    let maxReportsPerType: Int?
+
     func toDictionary() -> [String: Any] {
-        guard let data = try? JSONEncoder().encode(self),
-              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+        guard
+            let data = try? JSONEncoder().encode(self),
+            let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else {
             return [:]
         }
+
         return dict
     }
 }
 
+// MARK: - DiagnosticType
+
 /// Types of diagnostic information to collect
 enum DiagnosticType: String, Codable, CaseIterable {
-    case all = "all"
+    case all
     case crashReports = "crash_reports"
     case spinReports = "spin_reports"
     case systemLogs = "system_logs"
@@ -73,6 +78,8 @@ enum DiagnosticType: String, Codable, CaseIterable {
     case networkDiagnostics = "network_diagnostics"
     case performanceMetrics = "performance_metrics"
 }
+
+// MARK: - SystemDiagnosticReport
 
 /// Comprehensive system diagnostic report
 struct SystemDiagnosticReport: ToolOutput, Codable {
@@ -89,14 +96,14 @@ struct SystemDiagnosticReport: ToolOutput, Codable {
     let networkDiagnostics: NetworkDiagnostics?
     let performanceMetrics: PerformanceMetrics?
     let summary: DiagnosticSummary
-    
+
     func toFormattedString() -> String {
         var output = "=== SYSTEM DIAGNOSTIC REPORT ===\n"
         output += "Generated: \(timestamp)\n\n"
-        
+
         output += "=== SYSTEM INFORMATION ===\n"
         output += systemInfo.toFormattedString() + "\n\n"
-        
+
         if !crashReports.isEmpty {
             output += "=== CRASH REPORTS (\(crashReports.count)) ===\n"
             for report in crashReports.prefix(5) {
@@ -107,7 +114,7 @@ struct SystemDiagnosticReport: ToolOutput, Codable {
             }
             output += "\n"
         }
-        
+
         if !spinReports.isEmpty {
             output += "=== SPIN REPORTS (\(spinReports.count)) ===\n"
             for report in spinReports.prefix(3) {
@@ -118,7 +125,7 @@ struct SystemDiagnosticReport: ToolOutput, Codable {
             }
             output += "\n"
         }
-        
+
         if !jetsamReports.isEmpty {
             output += "=== JETSAM REPORTS (\(jetsamReports.count)) ===\n"
             for report in jetsamReports.prefix(3) {
@@ -126,7 +133,7 @@ struct SystemDiagnosticReport: ToolOutput, Codable {
             }
             output += "\n"
         }
-        
+
         if !appSamples.isEmpty {
             output += "=== APP SAMPLES (\(appSamples.count)) ===\n"
             for sample in appSamples.prefix(3) {
@@ -134,23 +141,25 @@ struct SystemDiagnosticReport: ToolOutput, Codable {
             }
             output += "\n"
         }
-        
+
         if let network = networkDiagnostics {
             output += "=== NETWORK DIAGNOSTICS ===\n"
             output += network.toFormattedString() + "\n\n"
         }
-        
+
         if let performance = performanceMetrics {
             output += "=== PERFORMANCE METRICS ===\n"
             output += performance.toFormattedString() + "\n\n"
         }
-        
+
         output += "=== SUMMARY ===\n"
         output += summary.toFormattedString()
-        
+
         return output
     }
 }
+
+// MARK: - SystemInformation
 
 /// System information structure
 struct SystemInformation: Codable {
@@ -168,7 +177,7 @@ struct SystemInformation: Codable {
     let bootTime: Date
     let thermalState: String
     let batteryInfo: BatteryInfo?
-    
+
     func toFormattedString() -> String {
         var output = "Host: \(hostName)\n"
         output += "OS: \(osVersion) (\(osBuild))\n"
@@ -187,16 +196,20 @@ struct SystemInformation: Codable {
     }
 }
 
+// MARK: - DiskSpace
+
 /// Disk space information
 struct DiskSpace: Codable {
     let total: UInt64
     let available: UInt64
     let used: UInt64
-    
+
     func toFormattedString() -> String {
         return "\(formatBytes(total)) total, \(formatBytes(available)) available, \(formatBytes(used)) used"
     }
 }
+
+// MARK: - BatteryInfo
 
 /// Battery information (for laptops)
 struct BatteryInfo: Codable {
@@ -204,7 +217,7 @@ struct BatteryInfo: Codable {
     let isCharging: Bool
     let cycleCount: Int?
     let health: String?
-    
+
     func toFormattedString() -> String {
         var output = "\(level)%"
         if isCharging {
@@ -220,6 +233,8 @@ struct BatteryInfo: Codable {
     }
 }
 
+// MARK: - DiagnosticReport
+
 /// Individual diagnostic report
 struct DiagnosticReport: Codable {
     let type: String
@@ -230,13 +245,13 @@ struct DiagnosticReport: Codable {
     let modificationDate: Date
     let appName: String?
     let bundleIdentifier: String?
-    let processId: Int?
+    let processID: Int?
     let exceptionType: String?
     let exceptionCode: String?
     let signal: String?
     let summary: String?
     let content: String?
-    
+
     func toFormattedString() -> String {
         var output = "\(type): \(fileName)\n"
         output += "  App: \(appName ?? "Unknown")\n"
@@ -260,21 +275,23 @@ struct DiagnosticReport: Codable {
     }
 }
 
+// MARK: - AppSample
+
 /// App sample information
 struct AppSample: Codable {
     let appName: String
     let bundleIdentifier: String
-    let processId: Int
+    let processID: Int
     let cpuUsage: Double
     let memoryUsage: UInt64
     let threadCount: Int
     let sampleTime: Date
     let isResponsive: Bool
     let sampleData: String?
-    
+
     func toFormattedString() -> String {
         var output = "App: \(appName) (\(bundleIdentifier))\n"
-        output += "  PID: \(processId)\n"
+        output += "  PID: \(processID)\n"
         output += "  CPU: \(String(format: "%.1f", cpuUsage))%\n"
         output += "  Memory: \(formatBytes(memoryUsage))\n"
         output += "  Threads: \(threadCount)\n"
@@ -284,6 +301,8 @@ struct AppSample: Codable {
     }
 }
 
+// MARK: - NetworkDiagnostics
+
 /// Network diagnostics
 struct NetworkDiagnostics: Codable {
     let activeConnections: Int
@@ -291,7 +310,7 @@ struct NetworkDiagnostics: Codable {
     let dnsServers: [String]
     let routingTable: [String]
     let networkReachability: String
-    
+
     func toFormattedString() -> String {
         var output = "Active Connections: \(activeConnections)\n"
         output += "Network Interfaces: \(networkInterfaces.count)\n"
@@ -301,6 +320,8 @@ struct NetworkDiagnostics: Codable {
     }
 }
 
+// MARK: - NetworkInterface
+
 /// Network interface information
 struct NetworkInterface: Codable {
     let name: String
@@ -308,6 +329,8 @@ struct NetworkInterface: Codable {
     let isActive: Bool
     let speed: String?
 }
+
+// MARK: - PerformanceMetrics
 
 /// Performance metrics
 struct PerformanceMetrics: Codable {
@@ -317,7 +340,7 @@ struct PerformanceMetrics: Codable {
     let networkActivity: String
     let thermalPressure: String
     let gpuUsage: Double?
-    
+
     func toFormattedString() -> String {
         var output = "CPU Usage: \(String(format: "%.1f", cpuUsage))%\n"
         output += "Memory Pressure: \(memoryPressure)\n"
@@ -331,6 +354,8 @@ struct PerformanceMetrics: Codable {
     }
 }
 
+// MARK: - DiagnosticSummary
+
 /// Diagnostic summary
 struct DiagnosticSummary: Codable {
     let totalReports: Int
@@ -342,7 +367,7 @@ struct DiagnosticSummary: Codable {
     let mostFrequentCrasher: String?
     let systemHealth: String
     let recommendations: [String]
-    
+
     func toFormattedString() -> String {
         var output = "Total Reports: \(totalReports)\n"
         output += "Crashes: \(crashCount)\n"
@@ -364,87 +389,88 @@ struct DiagnosticSummary: Codable {
     }
 }
 
-// MARK: - System Diagnostic Tool
+// MARK: - SystemDiagnosticTool
 
 /// Comprehensive system diagnostic report collector
 final class SystemDiagnosticTool: AITool {
-    
+    // MARK: Internal
+
     // MARK: - AITool Protocol Implementation
-    
+
     let name: String = "system_diagnostic"
-    
+
     let description: String = """
     Collects comprehensive system diagnostic reports including crash reports, spin reports, 
     system logs, app samples, and performance metrics. Helps diagnose issues like app crashes, 
     system slowdowns, and performance problems. Uses native macOS APIs to gather diagnostic 
     information from system and user directories.
     """
-    
+
     var parametersSchema: ToolParameterSchema {
         ToolParameterSchema([
             "type": "object",
             "properties": [
                 "app_name": [
                     "type": "string",
-                    "description": "Specific app name to focus diagnostic collection on"
+                    "description": "Specific app name to focus diagnostic collection on",
                 ],
                 "bundle_identifier": [
                     "type": "string",
-                    "description": "Bundle identifier to focus diagnostic collection on"
+                    "description": "Bundle identifier to focus diagnostic collection on",
                 ],
                 "diagnostic_type": [
                     "type": "string",
                     "enum": DiagnosticType.allCases.map { $0.rawValue },
-                    "description": "Type of diagnostic information to collect (default: all)"
+                    "description": "Type of diagnostic information to collect (default: all)",
                 ],
                 "time_range_hours": [
                     "type": "integer",
-                    "description": "Time range for reports in hours (default: 24)"
+                    "description": "Time range for reports in hours (default: 24)",
                 ],
                 "include_system_reports": [
                     "type": "boolean",
-                    "description": "Include system-level diagnostic reports (default: true)"
+                    "description": "Include system-level diagnostic reports (default: true)",
                 ],
                 "include_user_reports": [
                     "type": "boolean",
-                    "description": "Include user-level diagnostic reports (default: true)"
+                    "description": "Include user-level diagnostic reports (default: true)",
                 ],
                 "collect_app_samples": [
                     "type": "boolean",
-                    "description": "Collect app performance samples (default: true)"
+                    "description": "Collect app performance samples (default: true)",
                 ],
                 "max_reports_per_type": [
                     "type": "integer",
-                    "description": "Maximum number of reports to return per type (default: 50)"
-                ]
-            ]
+                    "description": "Maximum number of reports to return per type (default: 50)",
+                ],
+            ],
         ])
     }
-    
+
     func execute(arguments: [String: Any]) async throws -> String {
         Logger.tools("SystemDiagnosticTool.execute: Starting with arguments: \(arguments)")
-        
+
         // Parse input
         let input = try parseInput(from: arguments)
         Logger.tools("SystemDiagnosticTool.execute: Parsed input: \(input)")
-        
+
         // Collect system information
         let systemInfo = try await collectSystemInformation()
         Logger.tools("SystemDiagnosticTool.execute: Collected system info")
-        
+
         // Collect diagnostic reports based on type
-        var crashReports: [DiagnosticReport] = []
-        var spinReports: [DiagnosticReport] = []
-        let systemLogs: [DiagnosticReport] = []
-        let appLogs: [DiagnosticReport] = []
-        var jetsamReports: [DiagnosticReport] = []
-        var thermalReports: [DiagnosticReport] = []
-        var watchdogReports: [DiagnosticReport] = []
-        
+        var crashReports = [DiagnosticReport]()
+        var spinReports = [DiagnosticReport]()
+        let systemLogs = [DiagnosticReport]()
+        let appLogs = [DiagnosticReport]()
+        var jetsamReports = [DiagnosticReport]()
+        var thermalReports = [DiagnosticReport]()
+        var watchdogReports = [DiagnosticReport]()
+
         let diagnosticType = input.diagnosticType ?? .all
         let timeRange = TimeInterval((input.timeRangeHours ?? 24) * 3600)
-        let maxReports = max(1, input.maxReportsPerType ?? 50)  // Ensure maxReports is at least 1
-        
+        let maxReports = max(1, input.maxReportsPerType ?? 50) // Ensure maxReports is at least 1
+
         if diagnosticType == .all || diagnosticType == .crashReports {
             crashReports = try await collectCrashReports(
                 appName: input.appName,
@@ -453,7 +479,7 @@ final class SystemDiagnosticTool: AITool {
                 maxReports: maxReports
             )
         }
-        
+
         if diagnosticType == .all || diagnosticType == .spinReports {
             spinReports = try await collectSpinReports(
                 appName: input.appName,
@@ -462,7 +488,7 @@ final class SystemDiagnosticTool: AITool {
                 maxReports: maxReports
             )
         }
-        
+
         if diagnosticType == .all || diagnosticType == .jetsamReports {
             jetsamReports = try await collectJetsamReports(
                 appName: input.appName,
@@ -471,7 +497,7 @@ final class SystemDiagnosticTool: AITool {
                 maxReports: maxReports
             )
         }
-        
+
         if diagnosticType == .all || diagnosticType == .thermalReports {
             thermalReports = try await collectThermalReports(
                 appName: input.appName,
@@ -480,7 +506,7 @@ final class SystemDiagnosticTool: AITool {
                 maxReports: maxReports
             )
         }
-        
+
         if diagnosticType == .all || diagnosticType == .watchdogReports {
             watchdogReports = try await collectWatchdogReports(
                 appName: input.appName,
@@ -489,28 +515,28 @@ final class SystemDiagnosticTool: AITool {
                 maxReports: maxReports
             )
         }
-        
+
         // Collect app samples
-        var appSamples: [AppSample] = []
+        var appSamples = [AppSample]()
         if (diagnosticType == .all || diagnosticType == .appSamples) && (input.collectAppSamples ?? true) {
             appSamples = try await collectAppSamples(
                 appName: input.appName,
                 bundleIdentifier: input.bundleIdentifier
             )
         }
-        
+
         // Collect network diagnostics
         var networkDiagnostics: NetworkDiagnostics?
         if diagnosticType == .all || diagnosticType == .networkDiagnostics {
             networkDiagnostics = try await collectNetworkDiagnostics()
         }
-        
+
         // Collect performance metrics
         var performanceMetrics: PerformanceMetrics?
         if diagnosticType == .all || diagnosticType == .performanceMetrics {
             performanceMetrics = try await collectPerformanceMetrics()
         }
-        
+
         // Generate summary
         let summary = generateSummary(
             crashReports: crashReports,
@@ -520,7 +546,7 @@ final class SystemDiagnosticTool: AITool {
             watchdogReports: watchdogReports,
             systemInfo: systemInfo
         )
-        
+
         // Create final report
         let report = SystemDiagnosticReport(
             timestamp: Date(),
@@ -537,19 +563,24 @@ final class SystemDiagnosticTool: AITool {
             performanceMetrics: performanceMetrics,
             summary: summary
         )
-        
-        Logger.tools("SystemDiagnosticTool.execute: Generated report with \(crashReports.count) crashes, \(spinReports.count) spins")
-        
+
+        Logger
+            .tools(
+                "SystemDiagnosticTool.execute: Generated report with \(crashReports.count) crashes, \(spinReports.count) spins"
+            )
+
         return report.toFormattedString()
     }
-    
+
+    // MARK: Private
+
     // MARK: - Private Methods
-    
+
     private func parseInput(from arguments: [String: Any]) throws -> SystemDiagnosticInput {
         let data = try JSONSerialization.data(withJSONObject: arguments)
         return try JSONDecoder().decode(SystemDiagnosticInput.self, from: data)
     }
-    
+
     private func collectSystemInformation() async throws -> SystemInformation {
         let hostName = Host.current().name ?? "Unknown"
         let osVersion = ProcessInfo.processInfo.operatingSystemVersionString
@@ -563,7 +594,7 @@ final class SystemDiagnosticTool: AITool {
         let bootTime = Date(timeIntervalSinceNow: -uptime)
         let thermalState = try getThermalState()
         let batteryInfo = try getBatteryInfo()
-        
+
         return SystemInformation(
             hostName: hostName,
             osVersion: osVersion,
@@ -581,19 +612,22 @@ final class SystemDiagnosticTool: AITool {
             batteryInfo: batteryInfo
         )
     }
-    
+
     private func collectCrashReports(
         appName: String?,
         bundleIdentifier: String?,
         timeRange: TimeInterval,
         maxReports: Int
-    ) async throws -> [DiagnosticReport] {
-        var reports: [DiagnosticReport] = []
-        
+    ) async throws
+        -> [DiagnosticReport]
+    {
+        var reports = [DiagnosticReport]()
+
         // Collect from user directory
-        let userReportsURL = FileManager.default.homeDirectoryForCurrentUser
+        let userReportsURL = FileManager.default
+            .homeDirectoryForCurrentUser
             .appendingPathComponent("Library/Logs/DiagnosticReports")
-        reports.append(contentsOf: try await collectReportsFromDirectory(
+        try reports.append(contentsOf: await collectReportsFromDirectory(
             url: userReportsURL,
             fileExtension: "ips",
             appName: appName,
@@ -602,10 +636,10 @@ final class SystemDiagnosticTool: AITool {
             maxReports: maxReports,
             type: "Crash Report"
         ))
-        
+
         // Collect from system directory
         let systemReportsURL = URL(fileURLWithPath: "/Library/Logs/DiagnosticReports")
-        reports.append(contentsOf: try await collectReportsFromDirectory(
+        try reports.append(contentsOf: await collectReportsFromDirectory(
             url: systemReportsURL,
             fileExtension: "ips",
             appName: appName,
@@ -614,22 +648,25 @@ final class SystemDiagnosticTool: AITool {
             maxReports: maxReports,
             type: "Crash Report"
         ))
-        
+
         return Array(reports.prefix(maxReports))
     }
-    
+
     private func collectSpinReports(
         appName: String?,
         bundleIdentifier: String?,
         timeRange: TimeInterval,
         maxReports: Int
-    ) async throws -> [DiagnosticReport] {
-        var reports: [DiagnosticReport] = []
-        
+    ) async throws
+        -> [DiagnosticReport]
+    {
+        var reports = [DiagnosticReport]()
+
         // Collect from user directory
-        let userReportsURL = FileManager.default.homeDirectoryForCurrentUser
+        let userReportsURL = FileManager.default
+            .homeDirectoryForCurrentUser
             .appendingPathComponent("Library/Logs/DiagnosticReports")
-        reports.append(contentsOf: try await collectReportsFromDirectory(
+        try reports.append(contentsOf: await collectReportsFromDirectory(
             url: userReportsURL,
             fileExtension: "spin",
             appName: appName,
@@ -638,10 +675,10 @@ final class SystemDiagnosticTool: AITool {
             maxReports: maxReports,
             type: "Spin Report"
         ))
-        
+
         // Collect from system directory
         let systemReportsURL = URL(fileURLWithPath: "/Library/Logs/DiagnosticReports")
-        reports.append(contentsOf: try await collectReportsFromDirectory(
+        try reports.append(contentsOf: await collectReportsFromDirectory(
             url: systemReportsURL,
             fileExtension: "spin",
             appName: appName,
@@ -650,21 +687,23 @@ final class SystemDiagnosticTool: AITool {
             maxReports: maxReports,
             type: "Spin Report"
         ))
-        
+
         return Array(reports.prefix(maxReports))
     }
-    
+
     private func collectJetsamReports(
         appName: String?,
         bundleIdentifier: String?,
         timeRange: TimeInterval,
         maxReports: Int
-    ) async throws -> [DiagnosticReport] {
-        var reports: [DiagnosticReport] = []
-        
+    ) async throws
+        -> [DiagnosticReport]
+    {
+        var reports = [DiagnosticReport]()
+
         // Jetsam reports are typically in system logs
         let systemLogsURL = URL(fileURLWithPath: "/var/log")
-        reports.append(contentsOf: try await collectReportsFromDirectory(
+        try reports.append(contentsOf: await collectReportsFromDirectory(
             url: systemLogsURL,
             fileExtension: "log",
             appName: appName,
@@ -673,21 +712,23 @@ final class SystemDiagnosticTool: AITool {
             maxReports: maxReports,
             type: "Jetsam Report"
         ))
-        
+
         return Array(reports.prefix(maxReports))
     }
-    
+
     private func collectThermalReports(
         appName: String?,
         bundleIdentifier: String?,
         timeRange: TimeInterval,
         maxReports: Int
-    ) async throws -> [DiagnosticReport] {
-        var reports: [DiagnosticReport] = []
-        
+    ) async throws
+        -> [DiagnosticReport]
+    {
+        var reports = [DiagnosticReport]()
+
         // Thermal reports are typically in system logs
         let systemLogsURL = URL(fileURLWithPath: "/var/log")
-        reports.append(contentsOf: try await collectReportsFromDirectory(
+        try reports.append(contentsOf: await collectReportsFromDirectory(
             url: systemLogsURL,
             fileExtension: "log",
             appName: appName,
@@ -696,21 +737,23 @@ final class SystemDiagnosticTool: AITool {
             maxReports: maxReports,
             type: "Thermal Report"
         ))
-        
+
         return Array(reports.prefix(maxReports))
     }
-    
+
     private func collectWatchdogReports(
         appName: String?,
         bundleIdentifier: String?,
         timeRange: TimeInterval,
         maxReports: Int
-    ) async throws -> [DiagnosticReport] {
-        var reports: [DiagnosticReport] = []
-        
+    ) async throws
+        -> [DiagnosticReport]
+    {
+        var reports = [DiagnosticReport]()
+
         // Watchdog reports are typically in system logs
         let systemLogsURL = URL(fileURLWithPath: "/var/log")
-        reports.append(contentsOf: try await collectReportsFromDirectory(
+        try reports.append(contentsOf: await collectReportsFromDirectory(
             url: systemLogsURL,
             fileExtension: "log",
             appName: appName,
@@ -719,44 +762,48 @@ final class SystemDiagnosticTool: AITool {
             maxReports: maxReports,
             type: "Watchdog Report"
         ))
-        
+
         return Array(reports.prefix(maxReports))
     }
-    
+
     private func collectAppSamples(
         appName: String?,
         bundleIdentifier: String?
-    ) async throws -> [AppSample] {
-        var samples: [AppSample] = []
-        
+    ) async throws
+        -> [AppSample]
+    {
+        var samples = [AppSample]()
+
         // Get running applications
         let runningApps = NSWorkspace.shared.runningApplications
-        
+
         for app in runningApps {
             // Filter by app name or bundle identifier if specified
             if let targetAppName = appName, app.localizedName != targetAppName {
                 continue
             }
-            if let targetBundleId = bundleIdentifier, app.bundleIdentifier != targetBundleId {
+            if let targetBundleID = bundleIdentifier, app.bundleIdentifier != targetBundleID {
                 continue
             }
-            
-            guard let bundleId = app.bundleIdentifier,
-                  let appName = app.localizedName else {
+
+            guard
+                let bundleID = app.bundleIdentifier,
+                let appName = app.localizedName
+            else {
                 continue
             }
-            
+
             // Get process information
-            let processId = Int(app.processIdentifier)
-            let cpuUsage = try getCPUUsage(for: processId)
-            let memoryUsage = try getMemoryUsage(for: processId)
-            let threadCount = try getThreadCount(for: processId)
+            let processID = Int(app.processIdentifier)
+            let cpuUsage = try getCPUUsage(for: processID)
+            let memoryUsage = try getMemoryUsage(for: processID)
+            let threadCount = try getThreadCount(for: processID)
             let isResponsive = app.isActive
-            
+
             let sample = AppSample(
                 appName: appName,
-                bundleIdentifier: bundleId,
-                processId: processId,
+                bundleIdentifier: bundleID,
+                processID: processID,
                 cpuUsage: cpuUsage,
                 memoryUsage: memoryUsage,
                 threadCount: threadCount,
@@ -764,20 +811,20 @@ final class SystemDiagnosticTool: AITool {
                 isResponsive: isResponsive,
                 sampleData: nil
             )
-            
+
             samples.append(sample)
         }
-        
+
         return samples
     }
-    
+
     private func collectNetworkDiagnostics() async throws -> NetworkDiagnostics {
         let activeConnections = try getActiveConnections()
         let networkInterfaces = try getNetworkInterfaces()
         let dnsServers = try getDNSServers()
         let routingTable = try getRoutingTable()
         let networkReachability = try getNetworkReachability()
-        
+
         return NetworkDiagnostics(
             activeConnections: activeConnections,
             networkInterfaces: networkInterfaces,
@@ -786,7 +833,7 @@ final class SystemDiagnosticTool: AITool {
             networkReachability: networkReachability
         )
     }
-    
+
     private func collectPerformanceMetrics() async throws -> PerformanceMetrics {
         let cpuUsage = try getSystemCPUUsage()
         let memoryPressure = try getMemoryPressure()
@@ -794,7 +841,7 @@ final class SystemDiagnosticTool: AITool {
         let networkActivity = try getNetworkActivity()
         let thermalPressure = try getThermalPressure()
         let gpuUsage = try getGPUUsage()
-        
+
         return PerformanceMetrics(
             cpuUsage: cpuUsage,
             memoryPressure: memoryPressure,
@@ -804,7 +851,7 @@ final class SystemDiagnosticTool: AITool {
             gpuUsage: gpuUsage
         )
     }
-    
+
     private func collectReportsFromDirectory(
         url: URL,
         fileExtension: String,
@@ -813,40 +860,48 @@ final class SystemDiagnosticTool: AITool {
         timeRange: TimeInterval,
         maxReports: Int,
         type: String
-    ) async throws -> [DiagnosticReport] {
-        var reports: [DiagnosticReport] = []
-        
+    ) async throws
+        -> [DiagnosticReport]
+    {
+        var reports = [DiagnosticReport]()
+
         do {
             let fileManager = FileManager.default
             let files = try fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: [
                 .creationDateKey,
                 .contentModificationDateKey,
-                .fileSizeKey
+                .fileSizeKey,
             ])
-            
+
             let cutoffDate = Date().addingTimeInterval(-timeRange)
-            
+
             for file in files {
-                guard file.pathExtension == fileExtension else { continue }
-                
+                guard file.pathExtension == fileExtension else {
+                    continue
+                }
+
                 let attributes = try fileManager.attributesOfItem(atPath: file.path)
-                guard let creationDate = attributes[FileAttributeKey.creationDate] as? Date,
-                      creationDate >= cutoffDate else { continue }
-                
+                guard
+                    let creationDate = attributes[FileAttributeKey.creationDate] as? Date,
+                    creationDate >= cutoffDate
+                else {
+                    continue
+                }
+
                 let modificationDate = attributes[FileAttributeKey.modificationDate] as? Date ?? creationDate
                 let fileSize = attributes[FileAttributeKey.size] as? Int64 ?? 0
-                
+
                 // Parse report content to extract app information
                 let reportInfo = try parseReportContent(at: file)
-                
+
                 // Filter by app name or bundle identifier if specified
                 if let targetAppName = appName, reportInfo.appName != targetAppName {
                     continue
                 }
-                if let targetBundleId = bundleIdentifier, reportInfo.bundleIdentifier != targetBundleId {
+                if let targetBundleID = bundleIdentifier, reportInfo.bundleIdentifier != targetBundleID {
                     continue
                 }
-                
+
                 let report = DiagnosticReport(
                     type: type,
                     fileName: file.lastPathComponent,
@@ -856,16 +911,16 @@ final class SystemDiagnosticTool: AITool {
                     modificationDate: modificationDate,
                     appName: reportInfo.appName,
                     bundleIdentifier: reportInfo.bundleIdentifier,
-                    processId: reportInfo.processId,
+                    processID: reportInfo.processID,
                     exceptionType: reportInfo.exceptionType,
                     exceptionCode: reportInfo.exceptionCode,
                     signal: reportInfo.signal,
                     summary: reportInfo.summary,
                     content: reportInfo.content
                 )
-                
+
                 reports.append(report)
-                
+
                 if reports.count >= maxReports {
                     break
                 }
@@ -874,21 +929,32 @@ final class SystemDiagnosticTool: AITool {
             // Directory might not exist or be accessible, continue silently
             Logger.tools("SystemDiagnosticTool: Could not access directory \(url.path): \(error)")
         }
-        
+
         return reports
     }
-    
-    private func parseReportContent(at url: URL) throws -> (appName: String?, bundleIdentifier: String?, processId: Int?, exceptionType: String?, exceptionCode: String?, signal: String?, summary: String?, content: String?) {
+
+    private func parseReportContent(at url: URL) throws
+        -> (
+            appName: String?,
+            bundleIdentifier: String?,
+            processID: Int?,
+            exceptionType: String?,
+            exceptionCode: String?,
+            signal: String?,
+            summary: String?,
+            content: String?
+        )
+    {
         let content = try String(contentsOf: url, encoding: .utf8)
-        
+
         var appName: String?
         var bundleIdentifier: String?
-        var processId: Int?
+        var processID: Int?
         var exceptionType: String?
         var exceptionCode: String?
         var signal: String?
         var summary: String?
-        
+
         // Parse crash report content
         let lines = content.components(separatedBy: .newlines)
         for line in lines {
@@ -897,7 +963,7 @@ final class SystemDiagnosticTool: AITool {
             } else if line.hasPrefix("Identifier:") {
                 bundleIdentifier = line.components(separatedBy: " ").dropFirst().first
             } else if line.hasPrefix("PID:") {
-                processId = Int(line.components(separatedBy: " ").dropFirst().first ?? "")
+                processID = Int(line.components(separatedBy: " ").dropFirst().first ?? "")
             } else if line.hasPrefix("Exception Type:") {
                 exceptionType = line.components(separatedBy: " ").dropFirst(2).joined(separator: " ")
             } else if line.hasPrefix("Exception Codes:") {
@@ -906,14 +972,14 @@ final class SystemDiagnosticTool: AITool {
                 signal = line.components(separatedBy: " ").dropFirst(2).joined(separator: " ")
             }
         }
-        
+
         // Generate summary from first few lines
         let firstLines = lines.prefix(10).joined(separator: "\n")
         summary = firstLines.count > 200 ? String(firstLines.prefix(200)) + "..." : firstLines
-        
-        return (appName, bundleIdentifier, processId, exceptionType, exceptionCode, signal, summary, content)
+
+        return (appName, bundleIdentifier, processID, exceptionType, exceptionCode, signal, summary, content)
     }
-    
+
     private func generateSummary(
         crashReports: [DiagnosticReport],
         spinReports: [DiagnosticReport],
@@ -921,14 +987,17 @@ final class SystemDiagnosticTool: AITool {
         thermalReports: [DiagnosticReport],
         watchdogReports: [DiagnosticReport],
         systemInfo: SystemInformation
-    ) -> DiagnosticSummary {
-        let totalReports = crashReports.count + spinReports.count + jetsamReports.count + thermalReports.count + watchdogReports.count
-        
+    )
+        -> DiagnosticSummary
+    {
+        let totalReports = crashReports.count + spinReports.count + jetsamReports.count + thermalReports
+            .count + watchdogReports.count
+
         // Find most frequent crasher
         let crashCounts = Dictionary(grouping: crashReports, by: { $0.appName ?? "Unknown" })
             .mapValues { $0.count }
         let mostFrequentCrasher = crashCounts.max(by: { $0.value < $1.value })?.key
-        
+
         // Determine system health
         let systemHealth: String
         if crashReports.count > 10 {
@@ -940,9 +1009,9 @@ final class SystemDiagnosticTool: AITool {
         } else {
             systemHealth = "Good"
         }
-        
+
         // Generate recommendations
-        var recommendations: [String] = []
+        var recommendations = [String]()
         if crashReports.count > 5 {
             recommendations.append("Investigate frequent crashes - consider updating problematic apps")
         }
@@ -958,7 +1027,7 @@ final class SystemDiagnosticTool: AITool {
         if systemInfo.availableMemory < systemInfo.physicalMemory / 4 {
             recommendations.append("Low available memory - consider closing unused applications")
         }
-        
+
         return DiagnosticSummary(
             totalReports: totalReports,
             crashCount: crashReports.count,
@@ -971,167 +1040,164 @@ final class SystemDiagnosticTool: AITool {
             recommendations: recommendations
         )
     }
-    
+
     // MARK: - System Information Helpers
-    
+
     private func getSystemBuild() throws -> String {
-        let build = try sysctl(name: "kern.osversion")
-        return build
+        return try sysctl(name: "kern.osversion")
     }
-    
+
     private func getKernelVersion() throws -> String {
-        let version = try sysctl(name: "kern.version")
-        return version
+        return try sysctl(name: "kern.version")
     }
-    
+
     private func getArchitecture() throws -> String {
-        let arch = try sysctl(name: "hw.machine")
-        return arch
+        return try sysctl(name: "hw.machine")
     }
-    
+
     private func getCPUInfo() throws -> (type: String, subtype: String) {
         let type = try sysctl(name: "hw.cputype")
         let subtype = try sysctl(name: "hw.cpusubtype")
         return (type, subtype)
     }
-    
+
     private func getMemoryInfo() throws -> (physical: UInt64, available: UInt64) {
         let physical = try sysctl(name: "hw.memsize")
         let physicalBytes = UInt64(physical) ?? 0
-        
+
         // Get available memory from vm_statistics
         let available = try getAvailableMemory()
-        
+
         return (physicalBytes, available)
     }
-    
+
     private func getDiskSpace() throws -> DiskSpace {
         let homeURL = FileManager.default.homeDirectoryForCurrentUser
         let resourceValues = try homeURL.resourceValues(forKeys: [
             .volumeTotalCapacityKey,
-            .volumeAvailableCapacityKey
+            .volumeAvailableCapacityKey,
         ])
-        
+
         let total = UInt64(resourceValues.volumeTotalCapacity ?? 0)
         let available = UInt64(resourceValues.volumeAvailableCapacity ?? 0)
         let used = total - available
-        
+
         return DiskSpace(total: total, available: available, used: used)
     }
-    
+
     private func getThermalState() throws -> String {
         // This would require IOKit framework for detailed thermal state
         // For now, return a basic state
         return "Normal"
     }
-    
+
     private func getBatteryInfo() throws -> BatteryInfo? {
         // This would require IOKit framework for battery information
         // For now, return nil (desktop systems don't have batteries)
         return nil
     }
-    
-    private func getCPUUsage(for processId: Int) throws -> Double {
+
+    private func getCPUUsage(for processID: Int) throws -> Double {
         // This would require more complex process monitoring
         // For now, return a placeholder
         return 0.0
     }
-    
-    private func getMemoryUsage(for processId: Int) throws -> UInt64 {
+
+    private func getMemoryUsage(for processID: Int) throws -> UInt64 {
         // This would require more complex process monitoring
         // For now, return a placeholder
         return 0
     }
-    
-    private func getThreadCount(for processId: Int) throws -> Int {
+
+    private func getThreadCount(for processID: Int) throws -> Int {
         // This would require more complex process monitoring
         // For now, return a placeholder
         return 1
     }
-    
+
     private func getActiveConnections() throws -> Int {
         // This would require network monitoring
         // For now, return a placeholder
         return 0
     }
-    
+
     private func getNetworkInterfaces() throws -> [NetworkInterface] {
         // This would require network interface enumeration
         // For now, return empty array
         return []
     }
-    
+
     private func getDNSServers() throws -> [String] {
         // This would require DNS configuration reading
         // For now, return empty array
         return []
     }
-    
+
     private func getRoutingTable() throws -> [String] {
         // This would require routing table reading
         // For now, return empty array
         return []
     }
-    
+
     private func getNetworkReachability() throws -> String {
         // This would require network reachability testing
         // For now, return a placeholder
         return "Unknown"
     }
-    
+
     private func getSystemCPUUsage() throws -> Double {
         // This would require system CPU monitoring
         // For now, return a placeholder
         return 0.0
     }
-    
+
     private func getMemoryPressure() throws -> String {
         // This would require memory pressure monitoring
         // For now, return a placeholder
         return "Normal"
     }
-    
+
     private func getDiskActivity() throws -> String {
         // This would require disk activity monitoring
         // For now, return a placeholder
         return "Normal"
     }
-    
+
     private func getNetworkActivity() throws -> String {
         // This would require network activity monitoring
         // For now, return a placeholder
         return "Normal"
     }
-    
+
     private func getThermalPressure() throws -> String {
         // This would require thermal pressure monitoring
         // For now, return a placeholder
         return "Normal"
     }
-    
+
     private func getGPUUsage() throws -> Double? {
         // This would require GPU monitoring
         // For now, return nil
         return nil
     }
-    
+
     private func getAvailableMemory() throws -> UInt64 {
         // This would require more complex memory monitoring
         // For now, return a placeholder
         return 0
     }
-    
+
     private func sysctl(name: String) throws -> String {
         var size: size_t = 0
         sysctlbyname(name, nil, &size, nil, 0)
-        
+
         var buffer = [CChar](repeating: 0, count: size)
         let result = sysctlbyname(name, &buffer, &size, nil, 0)
-        
+
         guard result == 0 else {
             throw ToolError.executionFailed("Failed to get sysctl value for \(name)")
         }
-        
+
         return String(cString: buffer)
     }
 }
@@ -1149,7 +1215,7 @@ private func formatUptime(_ uptime: TimeInterval) -> String {
     let days = Int(uptime) / 86400
     let hours = (Int(uptime) % 86400) / 3600
     let minutes = (Int(uptime) % 3600) / 60
-    
+
     if days > 0 {
         return "\(days)d \(hours)h \(minutes)m"
     } else if hours > 0 {

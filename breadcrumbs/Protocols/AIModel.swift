@@ -32,8 +32,30 @@
 
 import Foundation
 
+// MARK: - ChatMessage
+
 /// Represents a message in the chat conversation
 struct ChatMessage: Identifiable, Codable, Sendable, Equatable {
+    // MARK: Lifecycle
+
+    init(
+        id: UUID = UUID(),
+        role: MessageRole,
+        content: String,
+        timestamp: Date = Date(),
+        toolCalls: [ToolCall]? = nil,
+        toolCallID: String? = nil
+    ) {
+        self.id = id
+        self.role = role
+        self.content = content
+        self.timestamp = timestamp
+        self.toolCalls = toolCalls
+        self.toolCallID = toolCallID
+    }
+
+    // MARK: Internal
+
     let id: UUID
     let role: MessageRole
     let content: String
@@ -42,24 +64,10 @@ struct ChatMessage: Identifiable, Codable, Sendable, Equatable {
 
     /// Additional metadata for tool results
     /// Used when role is .tool to reference which tool call this responds to
-    let toolCallId: String?
-
-    init(
-        id: UUID = UUID(),
-        role: MessageRole,
-        content: String,
-        timestamp: Date = Date(),
-        toolCalls: [ToolCall]? = nil,
-        toolCallId: String? = nil
-    ) {
-        self.id = id
-        self.role = role
-        self.content = content
-        self.timestamp = timestamp
-        self.toolCalls = toolCalls
-        self.toolCallId = toolCallId
-    }
+    let toolCallID: String?
 }
+
+// MARK: - MessageRole
 
 /// Message roles in conversation
 enum MessageRole: String, Codable, Sendable {
@@ -69,6 +77,8 @@ enum MessageRole: String, Codable, Sendable {
     case tool
 }
 
+// MARK: - ToolCall
+
 /// Represents a tool call request from the AI
 struct ToolCall: Identifiable, Codable, Sendable, Equatable {
     let id: String
@@ -76,16 +86,20 @@ struct ToolCall: Identifiable, Codable, Sendable, Equatable {
     let arguments: String // JSON string of arguments
 }
 
+// MARK: - ToolResult
+
 /// Represents a tool call result
 struct ToolResult: Codable, Sendable {
-    let toolCallId: String
+    let toolCallID: String
     let result: String
 }
+
+// MARK: - AIModel
 
 /// Protocol that all AI model providers must conform to
 protocol AIModel: Sendable {
     /// Unique identifier for the model provider (e.g., "openai", "anthropic")
-    var providerId: String { get }
+    var providerID: String { get }
 
     /// Display name for the model (e.g., "GPT-4", "Claude 3.5")
     var displayName: String { get }
@@ -101,7 +115,8 @@ protocol AIModel: Sendable {
     func sendMessage(
         messages: [ChatMessage],
         tools: [AITool]?
-    ) async throws -> ChatMessage
+    ) async throws
+        -> ChatMessage
 
     /// Stream a chat completion response (optional, for streaming support)
     /// - Parameters:
@@ -111,7 +126,8 @@ protocol AIModel: Sendable {
     func streamMessage(
         messages: [ChatMessage],
         tools: [AITool]?
-    ) async throws -> AsyncThrowingStream<String, Error>
+    ) async throws
+        -> AsyncThrowingStream<String, Error>
 }
 
 /// Default implementation for streaming (optional feature)
@@ -119,7 +135,9 @@ extension AIModel {
     func streamMessage(
         messages: [ChatMessage],
         tools: [AITool]?
-    ) async throws -> AsyncThrowingStream<String, Error> {
+    ) async throws
+        -> AsyncThrowingStream<String, Error>
+    {
         // Default: convert non-streaming to single chunk
         return AsyncThrowingStream { continuation in
             Task {
@@ -135,6 +153,8 @@ extension AIModel {
     }
 }
 
+// MARK: - AIModelError
+
 /// Errors that can occur during AI model operations
 enum AIModelError: LocalizedError {
     case invalidResponse
@@ -143,15 +163,17 @@ enum AIModelError: LocalizedError {
     case networkError(Error)
     case unsupportedFeature
 
+    // MARK: Internal
+
     var errorDescription: String? {
         switch self {
         case .invalidResponse:
             return "Invalid response from AI model"
-        case .toolExecutionFailed(let message):
+        case let .toolExecutionFailed(message):
             return "Tool execution failed: \(message)"
         case .apiKeyMissing:
             return "API key is missing"
-        case .networkError(let error):
+        case let .networkError(error):
             return "Network error: \(error.localizedDescription)"
         case .unsupportedFeature:
             return "This feature is not supported by the model"

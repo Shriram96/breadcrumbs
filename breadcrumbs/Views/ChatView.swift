@@ -5,19 +5,20 @@
 //  Main chat interface for system diagnostics
 //
 
-import SwiftUI
 import Foundation
+import SwiftUI
+
+// MARK: - ChatView
 
 struct ChatView: View {
-    @StateObject private var viewModel: ChatViewModel
-    @FocusState private var isInputFocused: Bool
-    @State private var cachedMessageGroups: [MessageGroup] = []
-    @State private var lastMessageCount: Int = 0
+    // MARK: Lifecycle
 
     init(apiKey: String) {
         let model = OpenAIModel(apiToken: apiKey, model: "gpt-4o")
         _viewModel = StateObject(wrappedValue: ChatViewModel(aiModel: model))
     }
+
+    // MARK: Internal
 
     var body: some View {
         VStack(spacing: 0) {
@@ -75,6 +76,13 @@ struct ChatView: View {
         }
     }
 
+    // MARK: Private
+
+    @StateObject private var viewModel: ChatViewModel
+    @FocusState private var isInputFocused: Bool
+    @State private var cachedMessageGroups: [MessageGroup] = []
+    @State private var lastMessageCount: Int = 0
+
     // MARK: - Subviews
 
     private var headerView: some View {
@@ -125,17 +133,15 @@ struct ChatView: View {
         .padding()
     }
 
-    // MARK: - Actions
-
     private func sendMessage() {
         let message = viewModel.currentInput
         Task {
             await viewModel.sendMessage(message)
         }
     }
-    
+
     // MARK: - Message Grouping
-    
+
     private func updateCachedMessageGroups() {
         // Only update if message count has changed
         if viewModel.messages.count != lastMessageCount {
@@ -143,41 +149,44 @@ struct ChatView: View {
             lastMessageCount = viewModel.messages.count
         }
     }
-    
+
     private func computeGroupedMessages() -> [MessageGroup] {
         let displayMessages = viewModel.displayMessages()
-        var groups: [MessageGroup] = []
+        var groups = [MessageGroup]()
         var i = 0
-        
+
         Logger.ui("Computing grouped messages from \(displayMessages.count) display messages")
-        
+
         while i < displayMessages.count {
             let message = displayMessages[i]
-            
+
             // Check if this is an assistant message with tool calls
             if message.role == .assistant, let toolCalls = message.toolCalls, !toolCalls.isEmpty {
                 Logger.ui("Found assistant message with \(toolCalls.count) tool calls")
-                
+
                 // Collect tool results that follow
-                var toolResults: [ChatMessage] = []
+                var toolResults = [ChatMessage]()
                 var j = i + 1
-                
-                while j < displayMessages.count && displayMessages[j].role == .tool {
+
+                while j < displayMessages.count, displayMessages[j].role == .tool {
                     let toolResult = displayMessages[j]
                     toolResults.append(toolResult)
-                    Logger.ui("Found tool result: ID=\(toolResult.toolCallId ?? "nil"), Content=\(toolResult.content.prefix(50))...")
+                    Logger
+                        .ui(
+                            "Found tool result: ID=\(toolResult.toolCallID ?? "nil"), Content=\(toolResult.content.prefix(50))..."
+                        )
                     j += 1
                 }
-                
+
                 Logger.ui("Collected \(toolResults.count) tool results for \(toolCalls.count) tool calls")
-                
+
                 // Find the final assistant response (if any)
                 var finalResponse: ChatMessage? = nil
-                if j < displayMessages.count && displayMessages[j].role == .assistant {
+                if j < displayMessages.count, displayMessages[j].role == .assistant {
                     finalResponse = displayMessages[j]
                     j += 1
                 }
-                
+
                 // Create tool group
                 let toolGroup = ToolUsageGroup(
                     id: message.id,
@@ -186,7 +195,7 @@ struct ChatView: View {
                     finalResponse: finalResponse
                 )
                 groups.append(.toolUsage(toolGroup))
-                
+
                 i = j
             } else {
                 // Regular message
@@ -194,61 +203,61 @@ struct ChatView: View {
                 i += 1
             }
         }
-        
+
         Logger.ui("Created \(groups.count) message groups")
         return groups
     }
 }
 
-// MARK: - Message Grouping Data Structures
+// MARK: - ToolUsageGroup
 
 struct ToolUsageGroup: Identifiable {
+    // MARK: Internal
+
     let id: UUID
     let toolCalls: [ToolCall]
     let toolResults: [ChatMessage]
     let finalResponse: ChatMessage?
-    
-    init(id: UUID, toolCalls: [ToolCall], toolResults: [ChatMessage], finalResponse: ChatMessage?) {
-        self.id = id
-        self.toolCalls = toolCalls
-        self.toolResults = toolResults
-        self.finalResponse = finalResponse
-    }
 }
+
+// MARK: - MessageGroup
 
 enum MessageGroup: Identifiable {
     case regular(ChatMessage)
     case toolUsage(ToolUsageGroup)
-    
+
+    // MARK: Internal
+
     var id: UUID {
         switch self {
-        case .regular(let message):
+        case let .regular(message):
             return message.id
-        case .toolUsage(let group):
+        case let .toolUsage(group):
             return group.id
         }
     }
 }
 
-// MARK: - Message Group View
+// MARK: - MessageGroupView
 
 struct MessageGroupView: View {
+    // MARK: Internal
+
     let group: MessageGroup
-    @State private var isToolUsageExpanded = false
-    
+
     var body: some View {
         switch group {
-        case .regular(let message):
+        case let .regular(message):
             MessageBubble(message: message)
-            
-        case .toolUsage(let toolGroup):
+
+        case let .toolUsage(toolGroup):
             VStack(alignment: .leading, spacing: 8) {
                 // Tool usage header (collapsible)
                 ToolUsageHeader(
                     toolCalls: toolGroup.toolCalls,
                     isExpanded: $isToolUsageExpanded
                 )
-                
+
                 // Tool usage details (expandable)
                 if isToolUsageExpanded {
                     ToolUsageDetails(
@@ -257,7 +266,7 @@ struct MessageGroupView: View {
                     )
                     .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 }
-                
+
                 // Final AI response
                 if let finalResponse = toolGroup.finalResponse {
                     MessageBubble(message: finalResponse)
@@ -265,14 +274,18 @@ struct MessageGroupView: View {
             }
         }
     }
+
+    // MARK: Private
+
+    @State private var isToolUsageExpanded = false
 }
 
-// MARK: - Tool Usage Header
+// MARK: - ToolUsageHeader
 
 struct ToolUsageHeader: View {
     let toolCalls: [ToolCall]
     @Binding var isExpanded: Bool
-    
+
     var body: some View {
         HStack {
             Spacer(minLength: 60)
@@ -305,12 +318,12 @@ struct ToolUsageHeader: View {
     }
 }
 
-// MARK: - Tool Usage Details
+// MARK: - ToolUsageDetails
 
 struct ToolUsageDetails: View {
     let toolCalls: [ToolCall]
     let toolResults: [ChatMessage]
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(toolCalls, id: \.id) { toolCall in
@@ -322,9 +335,9 @@ struct ToolUsageDetails: View {
                             .fontWeight(.medium)
                         Spacer()
                     }
-                    
+
                     // Find the corresponding tool result
-                    if let toolResult = toolResults.first(where: { $0.toolCallId == toolCall.id }) {
+                    if let toolResult = toolResults.first(where: { $0.toolCallID == toolCall.id }) {
                         // Tool result
                         Text(toolResult.content)
                             .font(.caption)
@@ -342,7 +355,7 @@ struct ToolUsageDetails: View {
                                 .padding(8)
                                 .background(Color.orange.opacity(0.1))
                                 .cornerRadius(6)
-                            
+
                             // Debug info
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Debug Info:")
@@ -353,7 +366,7 @@ struct ToolUsageDetails: View {
                                 Text("Available Results: \(toolResults.count)")
                                     .font(.caption2)
                                 ForEach(toolResults, id: \.id) { result in
-                                    Text("  - Result ID: \(result.toolCallId ?? "nil")")
+                                    Text("  - Result ID: \(result.toolCallID ?? "nil")")
                                         .font(.caption2)
                                 }
                             }
@@ -373,15 +386,20 @@ struct ToolUsageDetails: View {
                 Logger.ui("  - Tool Call: \(toolCall.name), ID: \(toolCall.id)")
             }
             for toolResult in toolResults {
-                Logger.ui("  - Tool Result: ID: \(toolResult.toolCallId ?? "nil"), Content: \(toolResult.content.prefix(50))...")
+                Logger
+                    .ui(
+                        "  - Tool Result: ID: \(toolResult.toolCallID ?? "nil"), Content: \(toolResult.content.prefix(50))..."
+                    )
             }
         }
     }
 }
 
-// MARK: - Message Bubble
+// MARK: - MessageBubble
 
 struct MessageBubble: View {
+    // MARK: Internal
+
     let message: ChatMessage
 
     var body: some View {
@@ -405,6 +423,8 @@ struct MessageBubble: View {
         }
     }
 
+    // MARK: Private
+
     private var backgroundColor: Color {
         switch message.role {
         case .user:
@@ -421,7 +441,7 @@ struct MessageBubble: View {
     }
 }
 
-// MARK: - Error Banner
+// MARK: - ErrorBanner
 
 struct ErrorBanner: View {
     let message: String

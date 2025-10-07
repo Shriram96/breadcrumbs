@@ -1,0 +1,45 @@
+# SwiftFormat Configuration for Breadcrumbs
+
+# Formatting rules
+--rules all
+--disable redundantSelf,unusedArguments,strongifiedSelf
+
+# Indentation
+--indent 4
+--tabwidth 4
+--smarttabs enabled
+
+# Line length
+--maxwidth 120
+
+# Spacing
+--operatorfunc spaced
+--nospaceoperators ...,..<
+--ranges spaced
+
+# Imports
+--importgrouping testable-bottom
+--importgrouping alphabetical
+
+# Comments
+--stripunusedargs closure-only
+--removelines disabled
+
+# Wrapping
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--closingparen balanced
+--wrapreturntype if-multiline
+--wrapconditions before-first
+
+# Other
+--trimwhitespace always
+--commas always
+--semicolons never
+--decimalgrouping 3,6
+--binarygrouping 4,8
+--octalgrouping 4,8
+--hexgrouping 4,8
+--fractiongrouping enabled
+--exponentgrouping enabled

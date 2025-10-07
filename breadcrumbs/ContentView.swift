@@ -7,23 +7,22 @@
 
 import SwiftUI
 
-struct ContentView: View {
-    @State private var showingSettings = false
-    @State private var apiKey: String?
-    @State private var isAuthenticating = false
-    @State private var authenticationError: String?
+// MARK: - ContentView
 
-    private let keychain: KeychainProtocol
-    
-    // Default initializer for production use
+struct ContentView: View {
+    // MARK: Lifecycle
+
+    /// Default initializer for production use
     init() {
         self.keychain = KeychainHelper.shared
     }
-    
-    // Test initializer for dependency injection
+
+    /// Test initializer for dependency injection
     init(keychain: KeychainProtocol) {
         self.keychain = keychain
     }
+
+    // MARK: Internal
 
     var body: some View {
         VStack {
@@ -65,17 +64,26 @@ struct ContentView: View {
         }
     }
 
+    // MARK: Private
+
+    @State private var showingSettings = false
+    @State private var apiKey: String?
+    @State private var isAuthenticating = false
+    @State private var authenticationError: String?
+
+    private let keychain: KeychainProtocol
+
     private func loadAPIKey() {
         // Check if biometric authentication is available
         if keychain.isBiometricAuthenticationAvailable() {
             // Use biometric authentication
             isAuthenticating = true
             authenticationError = nil
-            
+
             keychain.authenticateWithBiometrics(reason: "Access your stored API key") { [self] success, error in
                 DispatchQueue.main.async {
                     isAuthenticating = false
-                    
+
                     if success {
                         // Authentication successful, get the API key
                         apiKey = keychain.get(forKey: KeychainHelper.openAIAPIKey, prompt: "Access your API key")
@@ -97,7 +105,7 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Welcome View
+// MARK: - WelcomeView
 
 struct WelcomeView: View {
     @Binding var showingSettings: Bool
@@ -153,6 +161,8 @@ struct WelcomeView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
+
+// MARK: - FeatureRow
 
 struct FeatureRow: View {
     let icon: String

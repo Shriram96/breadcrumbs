@@ -5,73 +5,74 @@
 //  Mock implementation of AppCheckerTool for testing
 //
 
-import Foundation
 @testable import breadcrumbs
+import Foundation
 
 /// Mock implementation of AppCheckerTool for testing purposes
 final class MockAppCheckerTool: AITool, @unchecked Sendable {
-    
+    // MARK: Internal
+
     let name = "app_checker"
-    
+
     let description = "Mock app checker tool for testing"
-    
+
+    // Mock data
+    var mockApps: [AppInfo] = []
+    var shouldThrowError = false
+    var mockError: Error = ToolError.executionFailed("Mock error")
+    var lastExecutedArguments: [String: Any] = [:]
+
     var parametersSchema: ToolParameterSchema {
         ToolParameterSchema([
             "type": "object",
             "properties": [
                 "app_name": [
                     "type": "string",
-                    "description": "App name to search for"
+                    "description": "App name to search for",
                 ],
                 "bundle_identifier": [
                     "type": "string",
-                    "description": "Bundle identifier to search for"
+                    "description": "Bundle identifier to search for",
                 ],
                 "category": [
                     "type": "string",
-                    "description": "App category filter"
+                    "description": "App category filter",
                 ],
                 "include_system_apps": [
                     "type": "boolean",
-                    "description": "Include system apps"
+                    "description": "Include system apps",
                 ],
                 "running_apps_only": [
                     "type": "boolean",
-                    "description": "Running apps only"
+                    "description": "Running apps only",
                 ],
                 "max_results": [
                     "type": "integer",
-                    "description": "Maximum results"
-                ]
+                    "description": "Maximum results",
+                ],
             ],
-            "required": []
+            "required": [],
         ])
     }
-    
-    // Mock data
-    var mockApps: [AppInfo] = []
-    var shouldThrowError = false
-    var mockError: Error = ToolError.executionFailed("Mock error")
-    var lastExecutedArguments: [String: Any] = [:]
-    
+
     func execute(arguments: [String: Any]) async throws -> String {
         lastExecutedArguments = arguments
-        
+
         if shouldThrowError {
             throw mockError
         }
-        
+
         // Create mock output based on arguments
         let input = parseInput(from: arguments)
         let filteredApps = filterApps(mockApps, with: input)
-        
+
         let systemInfo = SystemInfo(
             osVersion: "macOS 14.0",
             architecture: "arm64",
             hostName: "MockMac.local",
             userName: "testuser"
         )
-        
+
         let output = AppCheckerOutput(
             query: buildQueryString(from: input),
             totalAppsFound: filteredApps.count,
@@ -80,93 +81,17 @@ final class MockAppCheckerTool: AITool, @unchecked Sendable {
             timestamp: Date(),
             systemInfo: systemInfo
         )
-        
+
         return output.toFormattedString()
     }
-    
-    // MARK: - Helper Methods (copied from real implementation for testing)
-    
-    private func parseInput(from arguments: [String: Any]) -> AppCheckerInput {
-        return AppCheckerInput(
-            appName: arguments["app_name"] as? String,
-            bundleIdentifier: arguments["bundle_identifier"] as? String,
-            category: arguments["category"] as? String,
-            includeSystemApps: arguments["include_system_apps"] as? Bool ?? false,
-            runningAppsOnly: arguments["running_apps_only"] as? Bool ?? false,
-            maxResults: arguments["max_results"] as? Int ?? 100
-        )
-    }
-    
-    private func buildQueryString(from input: AppCheckerInput) -> String {
-        var parts: [String] = []
-        
-        if let appName = input.appName {
-            parts.append("name: \(appName)")
-        }
-        if let bundleId = input.bundleIdentifier {
-            parts.append("bundle: \(bundleId)")
-        }
-        if let category = input.category {
-            parts.append("category: \(category)")
-        }
-        if input.runningAppsOnly ?? false {
-            parts.append("running only")
-        }
-        if input.includeSystemApps ?? false {
-            parts.append("including system apps")
-        }
-        
-        return parts.isEmpty ? "all applications" : parts.joined(separator: ", ")
-    }
-    
-    private func filterApps(_ apps: [AppInfo], with input: AppCheckerInput) -> [AppInfo] {
-        return apps.filter { app in
-            // Filter by app name
-            if let appName = input.appName {
-                if !app.name.localizedCaseInsensitiveContains(appName) {
-                    return false
-                }
-            }
-            
-            // Filter by bundle identifier
-            if let bundleId = input.bundleIdentifier {
-                if !app.bundleIdentifier.localizedCaseInsensitiveContains(bundleId) {
-                    return false
-                }
-            }
-            
-            // Filter by category
-            if let category = input.category {
-                if let appCategory = app.category {
-                    if !appCategory.localizedCaseInsensitiveContains(category) {
-                        return false
-                    }
-                } else {
-                    return false
-                }
-            }
-            
-            // Filter by system apps
-            if !(input.includeSystemApps ?? false) && app.isSystemApp {
-                return false
-            }
 
-            // Filter by running apps
-            if (input.runningAppsOnly ?? false) && !app.isRunning {
-                return false
-            }
-            
-            return true
-        }
-    }
-    
     // MARK: - Mock Configuration Methods
-    
+
     /// Set mock apps data
     func setMockApps(_ apps: [AppInfo]) {
         mockApps = apps
     }
-    
+
     /// Configure mock to throw error
     func setShouldThrowError(_ shouldThrow: Bool, error: Error? = nil) {
         shouldThrowError = shouldThrow
@@ -174,12 +99,12 @@ final class MockAppCheckerTool: AITool, @unchecked Sendable {
             mockError = error
         }
     }
-    
+
     /// Get the last executed arguments
     func getLastExecutedArguments() -> [String: Any] {
         return lastExecutedArguments
     }
-    
+
     /// Create sample mock apps for testing
     func createSampleMockApps() {
         mockApps = [
@@ -194,7 +119,7 @@ final class MockAppCheckerTool: AITool, @unchecked Sendable {
                 launchDate: Date(),
                 installDate: Date().addingTimeInterval(-86400),
                 lastOpenedDate: Date(),
-                fileSize: 200000000,
+                fileSize: 200_000_000,
                 isSystemApp: false,
                 isLaunchAgent: false,
                 isLaunchDaemon: false,
@@ -235,9 +160,9 @@ final class MockAppCheckerTool: AITool, @unchecked Sendable {
                 executablePath: "/Applications/Safari.app/Contents/MacOS/Safari",
                 isRunning: false,
                 launchDate: nil,
-                installDate: Date().addingTimeInterval(-2592000),
+                installDate: Date().addingTimeInterval(-2_592_000),
                 lastOpenedDate: Date().addingTimeInterval(-3600),
-                fileSize: 150000000,
+                fileSize: 150_000_000,
                 isSystemApp: true,
                 isLaunchAgent: false,
                 isLaunchDaemon: false,
@@ -259,8 +184,8 @@ final class MockAppCheckerTool: AITool, @unchecked Sendable {
                 appStoreInfo: AppStoreInfo(
                     isAppStoreApp: true,
                     appStoreVersion: "17.1",
-                    purchaseDate: Date().addingTimeInterval(-2592000),
-                    originalPurchaseDate: Date().addingTimeInterval(-2592000),
+                    purchaseDate: Date().addingTimeInterval(-2_592_000),
+                    originalPurchaseDate: Date().addingTimeInterval(-2_592_000),
                     isPurchased: true,
                     isFree: true
                 ),
@@ -278,9 +203,9 @@ final class MockAppCheckerTool: AITool, @unchecked Sendable {
                 executablePath: "/Applications/Steam.app/Contents/MacOS/steam_osx",
                 isRunning: false,
                 launchDate: nil,
-                installDate: Date().addingTimeInterval(-604800),
+                installDate: Date().addingTimeInterval(-604_800),
                 lastOpenedDate: Date().addingTimeInterval(-7200),
-                fileSize: 500000000,
+                fileSize: 500_000_000,
                 isSystemApp: false,
                 isLaunchAgent: false,
                 isLaunchDaemon: false,
@@ -321,9 +246,9 @@ final class MockAppCheckerTool: AITool, @unchecked Sendable {
                 executablePath: "/Applications/Norton Security.app/Contents/MacOS/Norton Security",
                 isRunning: true,
                 launchDate: Date().addingTimeInterval(-1800),
-                installDate: Date().addingTimeInterval(-1209600),
+                installDate: Date().addingTimeInterval(-1_209_600),
                 lastOpenedDate: Date().addingTimeInterval(-900),
-                fileSize: 800000000,
+                fileSize: 800_000_000,
                 isSystemApp: false,
                 isLaunchAgent: true,
                 isLaunchDaemon: true,
@@ -342,7 +267,7 @@ final class MockAppCheckerTool: AITool, @unchecked Sendable {
                     isHardenedRuntime: true,
                     entitlements: [
                         "com.apple.security.cs.allow-jit": "true",
-                        "com.apple.security.cs.allow-unsigned-executable-memory": "true"
+                        "com.apple.security.cs.allow-unsigned-executable-memory": "true",
                     ]
                 ),
                 appStoreInfo: AppStoreInfo(
@@ -357,7 +282,85 @@ final class MockAppCheckerTool: AITool, @unchecked Sendable {
                 developer: "NortonLifeLock Inc.",
                 copyright: "Copyright 2023 NortonLifeLock Inc.",
                 description: "Comprehensive security and antivirus protection"
-            )
+            ),
         ]
+    }
+
+    // MARK: Private
+
+    // MARK: - Helper Methods (copied from real implementation for testing)
+
+    private func parseInput(from arguments: [String: Any]) -> AppCheckerInput {
+        return AppCheckerInput(
+            appName: arguments["app_name"] as? String,
+            bundleIdentifier: arguments["bundle_identifier"] as? String,
+            category: arguments["category"] as? String,
+            includeSystemApps: arguments["include_system_apps"] as? Bool ?? false,
+            runningAppsOnly: arguments["running_apps_only"] as? Bool ?? false,
+            maxResults: arguments["max_results"] as? Int ?? 100
+        )
+    }
+
+    private func buildQueryString(from input: AppCheckerInput) -> String {
+        var parts = [String]()
+
+        if let appName = input.appName {
+            parts.append("name: \(appName)")
+        }
+        if let bundleID = input.bundleIdentifier {
+            parts.append("bundle: \(bundleID)")
+        }
+        if let category = input.category {
+            parts.append("category: \(category)")
+        }
+        if input.runningAppsOnly ?? false {
+            parts.append("running only")
+        }
+        if input.includeSystemApps ?? false {
+            parts.append("including system apps")
+        }
+
+        return parts.isEmpty ? "all applications" : parts.joined(separator: ", ")
+    }
+
+    private func filterApps(_ apps: [AppInfo], with input: AppCheckerInput) -> [AppInfo] {
+        return apps.filter { app in
+            // Filter by app name
+            if let appName = input.appName {
+                if !app.name.localizedCaseInsensitiveContains(appName) {
+                    return false
+                }
+            }
+
+            // Filter by bundle identifier
+            if let bundleID = input.bundleIdentifier {
+                if !app.bundleIdentifier.localizedCaseInsensitiveContains(bundleID) {
+                    return false
+                }
+            }
+
+            // Filter by category
+            if let category = input.category {
+                if let appCategory = app.category {
+                    if !appCategory.localizedCaseInsensitiveContains(category) {
+                        return false
+                    }
+                } else {
+                    return false
+                }
+            }
+
+            // Filter by system apps
+            if !(input.includeSystemApps ?? false), app.isSystemApp {
+                return false
+            }
+
+            // Filter by running apps
+            if input.runningAppsOnly ?? false, !app.isRunning {
+                return false
+            }
+
+            return true
+        }
     }
 }

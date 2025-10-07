@@ -5,20 +5,17 @@
 //  Mock implementation of AIModel for testing
 //
 
-import Foundation
 @testable import breadcrumbs
+import Foundation
 
 /// Mock implementation of AIModel for unit testing
 final class MockAIModel: AIModel, @unchecked Sendable {
-    
-    // MARK: - Properties
-    
-    let providerId: String = "mock"
+    let providerID: String = "mock"
     let displayName: String = "Mock AI Model"
     let supportsTools: Bool = true
-    
+
     // MARK: - Mock Configuration
-    
+
     var shouldThrowError: Bool = false
     var mockError: Error = AIModelError.invalidResponse
     var mockResponse: ChatMessage?
@@ -28,31 +25,33 @@ final class MockAIModel: AIModel, @unchecked Sendable {
     var streamMessageCallCount: Int = 0
     var lastMessages: [ChatMessage]?
     var lastTools: [AITool]?
-    
+
     // MARK: - AIModel Implementation
-    
+
     func sendMessage(
         messages: [ChatMessage],
         tools: [AITool]?
-    ) async throws -> ChatMessage {
+    ) async throws
+        -> ChatMessage
+    {
         sendMessageCallCount += 1
         lastMessages = messages
         lastTools = tools
-        
+
         if shouldThrowError {
             throw mockError
         }
-        
+
         // Use multiple responses if available, otherwise fall back to single response
         if !mockResponses.isEmpty {
             let responseIndex = min(sendMessageCallCount - 1, mockResponses.count - 1)
             return mockResponses[responseIndex]
         }
-        
+
         if let response = mockResponse {
             return response
         }
-        
+
         // Default mock response - ensure no tool calls to prevent infinite loops
         // If tools are nil (follow-up call), return a simple response without tool calls
         if tools == nil {
@@ -61,27 +60,29 @@ final class MockAIModel: AIModel, @unchecked Sendable {
                 content: "Final response after tool execution"
             )
         }
-        
+
         return ChatMessage(
             role: .assistant,
             content: "Mock response for \(messages.count) messages"
         )
     }
-    
+
     func streamMessage(
         messages: [ChatMessage],
         tools: [AITool]?
-    ) async throws -> AsyncThrowingStream<String, Error> {
+    ) async throws
+        -> AsyncThrowingStream<String, Error>
+    {
         streamMessageCallCount += 1
         lastMessages = messages
         lastTools = tools
-        
+
         if shouldThrowError {
             return AsyncThrowingStream { continuation in
                 continuation.finish(throwing: mockError)
             }
         }
-        
+
         return AsyncThrowingStream { continuation in
             Task {
                 for chunk in mockStreamChunks {
@@ -92,9 +93,9 @@ final class MockAIModel: AIModel, @unchecked Sendable {
             }
         }
     }
-    
+
     // MARK: - Test Helpers
-    
+
     func reset() {
         shouldThrowError = false
         mockError = AIModelError.invalidResponse
@@ -106,24 +107,24 @@ final class MockAIModel: AIModel, @unchecked Sendable {
         lastMessages = nil
         lastTools = nil
     }
-    
+
     func configureSuccessResponse(_ response: ChatMessage) {
         shouldThrowError = false
         mockResponse = response
         mockResponses = []
     }
-    
+
     func configureMultipleResponses(_ responses: [ChatMessage]) {
         shouldThrowError = false
         mockResponse = nil
         mockResponses = responses
     }
-    
+
     func configureError(_ error: Error) {
         shouldThrowError = true
         mockError = error
     }
-    
+
     func configureStreamChunks(_ chunks: [String]) {
         mockStreamChunks = chunks
     }

@@ -5,18 +5,26 @@
 //  AI Tool Protocol - Interface for tools that AI models can invoke
 //
 
-import Foundation
 import Combine
+import Foundation
+
+// MARK: - ToolParameterSchema
 
 /// A sendable wrapper for tool parameter schemas
 /// Represents JSON Schema in a type-safe, thread-safe manner
 struct ToolParameterSchema: @unchecked Sendable {
-    let jsonSchema: [String: Any]
+    // MARK: Lifecycle
 
     init(_ schema: [String: Any]) {
         self.jsonSchema = schema
     }
+
+    // MARK: Internal
+
+    let jsonSchema: [String: Any]
 }
+
+// MARK: - ToolInput
 
 /// Base protocol for tool input models
 /// All tool inputs should conform to this for type safety
@@ -25,12 +33,16 @@ protocol ToolInput: Sendable {
     func toDictionary() -> [String: Any]
 }
 
+// MARK: - ToolOutput
+
 /// Base protocol for tool output models
 /// All tool outputs should conform to this for structured responses
 protocol ToolOutput: Sendable {
     /// Convert output to human-readable string for AI consumption
     func toFormattedString() -> String
 }
+
+// MARK: - AITool
 
 /// Protocol that all tools must conform to for AI model integration
 protocol AITool: Sendable {
@@ -70,10 +82,13 @@ protocol AITool: Sendable {
 /// Default implementation for ToolInput (for Codable types)
 extension ToolInput where Self: Encodable {
     func toDictionary() -> [String: Any] {
-        guard let data = try? JSONEncoder().encode(self),
-              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+        guard
+            let data = try? JSONEncoder().encode(self),
+            let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else {
             return [:]
         }
+
         return dict
     }
 }
@@ -88,11 +103,13 @@ extension AITool {
             "function": [
                 "name": name,
                 "description": description,
-                "parameters": parametersSchema.jsonSchema
-            ]
+                "parameters": parametersSchema.jsonSchema,
+            ],
         ]
     }
 }
+
+// MARK: - ToolError
 
 /// Errors that can occur during tool execution
 enum ToolError: LocalizedError {
@@ -100,39 +117,45 @@ enum ToolError: LocalizedError {
     case executionFailed(String)
     case toolNotFound(String)
 
+    // MARK: Internal
+
     var errorDescription: String? {
         switch self {
-        case .invalidArguments(let message):
+        case let .invalidArguments(message):
             return "Invalid tool arguments: \(message)"
-        case .executionFailed(let message):
+        case let .executionFailed(message):
             return "Tool execution failed: \(message)"
-        case .toolNotFound(let name):
+        case let .toolNotFound(name):
             return "Tool not found: \(name)"
         }
     }
 }
 
+// MARK: - ToolRegistry
+
 /// Tool registry to manage available tools
 @MainActor
-class ToolRegistry: ObservableObject {
-    @Published private(set) var tools: [String: AITool] = [:]
-
-    nonisolated static let shared: ToolRegistry = {
-        // Create instance on main actor
-        return MainActor.assumeIsolated {
-            ToolRegistry()
-        }
-    }()
+final class ToolRegistry: ObservableObject {
+    // MARK: Lifecycle
 
     private init() {
         // Register default tools
         registerDefaultTools()
     }
-    
-    // Public initializer for testing
+
+    /// Public initializer for testing
     init(forTesting: Bool) {
         // Don't register default tools for testing
     }
+
+    // MARK: Internal
+
+    nonisolated static let shared: ToolRegistry = // Create instance on main actor
+        MainActor.assumeIsolated {
+            ToolRegistry()
+        }
+
+    @Published private(set) var tools: [String: AITool] = [:]
 
     /// Register a tool in the registry
     func register(_ tool: AITool) {
@@ -159,8 +182,11 @@ class ToolRegistry: ObservableObject {
         guard let tool = tools[name] else {
             throw ToolError.toolNotFound(name)
         }
+
         return try await tool.execute(arguments: arguments)
     }
+
+    // MARK: Private
 
     private func registerDefaultTools() {
         // Register system diagnostic tools

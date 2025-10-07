@@ -6,19 +6,21 @@
 //
 
 import Foundation
-import Security
 import LocalAuthentication
 import os.log
+import Security
+
+// MARK: - KeychainHelper
 
 /// Helper class for storing and retrieving sensitive data from macOS Keychain
-class KeychainHelper: KeychainProtocol {
-
-    static let shared = KeychainHelper()
+final class KeychainHelper: KeychainProtocol {
+    // MARK: Lifecycle
 
     private init() {}
 
-    /// Service identifier for Keychain items
-    private let service = "com.breadcrumbs.systemdiagnostics"
+    // MARK: Internal
+
+    static let shared: KeychainHelper = .init()
 
     // MARK: - Public Methods
 
@@ -31,37 +33,37 @@ class KeychainHelper: KeychainProtocol {
     @discardableResult
     func save(_ value: String, forKey key: String, requireBiometric: Bool = false) -> Bool {
         #if UNIT_TESTS
-        // Skip actual keychain operations during unit tests to avoid system prompts
-        return true
+            // Skip actual keychain operations during unit tests to avoid system prompts
+            return true
         #else
-        guard let data = value.data(using: .utf8) else {
-            return false
-        }
-
-        // Delete any existing item
-        delete(forKey: key)
-
-        // Create query dictionary
-        var query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
-            kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly
-        ]
-
-        // Add biometric protection if requested
-        if requireBiometric {
-            if let accessControl = createBiometricAccessControl() {
-                query[kSecAttrAccessControl as String] = accessControl
-            } else {
-                os_log("Failed to create biometric access control", log: .default, type: .error)
+            guard let data = value.data(using: .utf8) else {
                 return false
             }
-        }
 
-        let status = SecItemAdd(query as CFDictionary, nil)
-        return status == errSecSuccess
+            // Delete any existing item
+            delete(forKey: key)
+
+            /// Create query dictionary
+            var query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: service,
+                kSecAttrAccount as String: key,
+                kSecValueData as String: data,
+                kSecAttrAccessible as String: kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly,
+            ]
+
+            // Add biometric protection if requested
+            if requireBiometric {
+                if let accessControl = createBiometricAccessControl() {
+                    query[kSecAttrAccessControl as String] = accessControl
+                } else {
+                    os_log("Failed to create biometric access control", log: .default, type: .error)
+                    return false
+                }
+            }
+
+            let status = SecItemAdd(query as CFDictionary, nil)
+            return status == errSecSuccess
         #endif
     }
 
@@ -72,36 +74,44 @@ class KeychainHelper: KeychainProtocol {
     /// - Returns: The stored string, or nil if not found or authentication failed
     func get(forKey key: String, prompt: String? = nil) -> String? {
         #if UNIT_TESTS
-        // Skip actual keychain operations during unit tests to avoid system prompts
-        // Return a mock value for testing
-        return "mock_api_key_for_testing"
+            // Skip actual keychain operations during unit tests to avoid system prompts
+            // Return a mock value for testing
+            return "mock_api_key_for_testing"
         #else
-        var query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
+            var query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: service,
+                kSecAttrAccount as String: key,
+                kSecReturnData as String: true,
+                kSecMatchLimit as String: kSecMatchLimitOne,
+            ]
 
-        // Add biometric authentication context if provided
-        if let prompt = prompt {
-            let context = LAContext()
-            context.localizedReason = prompt
-            query[kSecUseAuthenticationContext as String] = context
-        }
+            // Add biometric authentication context if provided
+            if let prompt = prompt {
+                let context = LAContext()
+                context.localizedReason = prompt
+                query[kSecUseAuthenticationContext as String] = context
+            }
 
-        var dataTypeRef: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &dataTypeRef)
+            var dataTypeRef: AnyObject?
+            let status = SecItemCopyMatching(query as CFDictionary, &dataTypeRef)
 
-        guard status == errSecSuccess,
-              let data = dataTypeRef as? Data,
-              let value = String(data: data, encoding: .utf8) else {
-            os_log("Failed to retrieve keychain item for key: %{public}@, status: %d", log: .default, type: .error, key, status)
-            return nil
-        }
+            guard
+                status == errSecSuccess,
+                let data = dataTypeRef as? Data,
+                let value = String(data: data, encoding: .utf8)
+            else {
+                os_log(
+                    "Failed to retrieve keychain item for key: %{public}@, status: %d",
+                    log: .default,
+                    type: .error,
+                    key,
+                    status
+                )
+                return nil
+            }
 
-        return value
+            return value
         #endif
     }
 
@@ -111,17 +121,17 @@ class KeychainHelper: KeychainProtocol {
     @discardableResult
     func delete(forKey key: String) -> Bool {
         #if UNIT_TESTS
-        // Skip actual keychain operations during unit tests to avoid system prompts
-        return true
+            // Skip actual keychain operations during unit tests to avoid system prompts
+            return true
         #else
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key
-        ]
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: service,
+                kSecAttrAccount as String: key,
+            ]
 
-        let status = SecItemDelete(query as CFDictionary)
-        return status == errSecSuccess || status == errSecItemNotFound
+            let status = SecItemDelete(query as CFDictionary)
+            return status == errSecSuccess || status == errSecItemNotFound
         #endif
     }
 
@@ -141,41 +151,41 @@ class KeychainHelper: KeychainProtocol {
     @discardableResult
     func update(_ value: String, forKey key: String, requireBiometric: Bool = false) -> Bool {
         #if UNIT_TESTS
-        // Skip actual keychain operations during unit tests to avoid system prompts
-        return true
+            // Skip actual keychain operations during unit tests to avoid system prompts
+            return true
         #else
-        guard let data = value.data(using: .utf8) else {
-            return false
-        }
-
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key
-        ]
-
-        var attributes: [String: Any] = [
-            kSecValueData as String: data
-        ]
-
-        // Add biometric protection if requested
-        if requireBiometric {
-            if let accessControl = createBiometricAccessControl() {
-                attributes[kSecAttrAccessControl as String] = accessControl
-            } else {
-                os_log("Failed to create biometric access control for update", log: .default, type: .error)
+            guard let data = value.data(using: .utf8) else {
                 return false
             }
-        }
 
-        let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: service,
+                kSecAttrAccount as String: key,
+            ]
 
-        if status == errSecItemNotFound {
-            // Item doesn't exist, create it
-            return save(value, forKey: key, requireBiometric: requireBiometric)
-        }
+            var attributes: [String: Any] = [
+                kSecValueData as String: data,
+            ]
 
-        return status == errSecSuccess
+            // Add biometric protection if requested
+            if requireBiometric {
+                if let accessControl = createBiometricAccessControl() {
+                    attributes[kSecAttrAccessControl as String] = accessControl
+                } else {
+                    os_log("Failed to create biometric access control for update", log: .default, type: .error)
+                    return false
+                }
+            }
+
+            let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+
+            if status == errSecItemNotFound {
+                // Item doesn't exist, create it
+                return save(value, forKey: key, requireBiometric: requireBiometric)
+            }
+
+            return status == errSecSuccess
         #endif
     }
 
@@ -185,19 +195,24 @@ class KeychainHelper: KeychainProtocol {
     /// - Returns: True if Touch ID/Face ID is available and enrolled
     func isBiometricAuthenticationAvailable() -> Bool {
         #if UNIT_TESTS
-        // Skip biometric checks during unit tests to avoid prompts
-        return false
+            // Skip biometric checks during unit tests to avoid prompts
+            return false
         #else
-        let context = LAContext()
-        var error: NSError?
-        
-        let isAvailable = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
-        
-        if let error = error {
-            os_log("Biometric authentication check failed: %{public}@", log: .default, type: .error, error.localizedDescription)
-        }
-        
-        return isAvailable
+            let context = LAContext()
+            var error: NSError?
+
+            let isAvailable = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
+
+            if let error = error {
+                os_log(
+                    "Biometric authentication check failed: %{public}@",
+                    log: .default,
+                    type: .error,
+                    error.localizedDescription
+                )
+            }
+
+            return isAvailable
         #endif
     }
 
@@ -205,28 +220,28 @@ class KeychainHelper: KeychainProtocol {
     /// - Returns: String describing the biometric type (Touch ID, Face ID, etc.)
     func getBiometricType() -> String {
         #if UNIT_TESTS
-        // Return mock biometric type during unit tests
-        return "Touch ID"
-        #else
-        let context = LAContext()
-        var error: NSError?
-        
-        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
-            return "Not Available"
-        }
-        
-        switch context.biometryType {
-        case .none:
-            return "None"
-        case .touchID:
+            // Return mock biometric type during unit tests
             return "Touch ID"
-        case .faceID:
-            return "Face ID"
-        case .opticID:
-            return "Optic ID"
-        @unknown default:
-            return "Unknown"
-        }
+        #else
+            let context = LAContext()
+            var error: NSError?
+
+            guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
+                return "Not Available"
+            }
+
+            switch context.biometryType {
+            case .none:
+                return "None"
+            case .touchID:
+                return "Touch ID"
+            case .faceID:
+                return "Face ID"
+            case .opticID:
+                return "Optic ID"
+            @unknown default:
+                return "Unknown"
+            }
         #endif
     }
 
@@ -236,23 +251,29 @@ class KeychainHelper: KeychainProtocol {
     ///   - completion: Completion handler with success/failure result
     func authenticateWithBiometrics(reason: String, completion: @escaping (Bool, Error?) -> Void) {
         #if UNIT_TESTS
-        // Skip biometric authentication during unit tests to avoid prompts
-        DispatchQueue.main.async {
-            completion(true, nil)
-        }
-        #else
-        let context = LAContext()
-        
-        // Set Touch ID authentication reuse duration (up to 5 minutes)
-        context.touchIDAuthenticationAllowableReuseDuration = 60 // 1 minute
-        
-        context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, error in
+            // Skip biometric authentication during unit tests to avoid prompts
             DispatchQueue.main.async {
-                completion(success, error)
+                completion(true, nil)
             }
-        }
+        #else
+            let context = LAContext()
+
+            // Set Touch ID authentication reuse duration (up to 5 minutes)
+            context.touchIDAuthenticationAllowableReuseDuration = 60 // 1 minute
+
+            context
+                .evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, error in
+                    DispatchQueue.main.async {
+                        completion(success, error)
+                    }
+                }
         #endif
     }
+
+    // MARK: Private
+
+    /// Service identifier for Keychain items
+    private let service = "com.breadcrumbs.systemdiagnostics"
 
     // MARK: - Private Helper Methods
 
@@ -260,21 +281,21 @@ class KeychainHelper: KeychainProtocol {
     /// - Returns: SecAccessControl object or nil if creation fails
     private func createBiometricAccessControl() -> SecAccessControl? {
         var error: Unmanaged<CFError>?
-        
+
         let accessControl = SecAccessControlCreateWithFlags(
             kCFAllocatorDefault,
             kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly,
             [.biometryAny, .or, .devicePasscode],
             &error
         )
-        
+
         if let error = error {
             let errorDescription = CFErrorCopyDescription(error.takeRetainedValue())
             let description = errorDescription as String? ?? "Unknown error"
             os_log("Failed to create access control: %{public}@", log: .default, type: .error, description)
             return nil
         }
-        
+
         return accessControl
     }
 }
@@ -284,9 +305,9 @@ class KeychainHelper: KeychainProtocol {
 extension KeychainHelper {
     /// Key for OpenAI API key
     static let openAIAPIKey = "openai_api_key"
-    
+
     // MARK: - Convenience Methods for Biometric-Protected Operations
-    
+
     /// Save a string value to Keychain with biometric protection (convenience method)
     /// - Parameters:
     ///   - value: The string to save
@@ -296,7 +317,7 @@ extension KeychainHelper {
     func saveWithBiometric(_ value: String, forKey key: String) -> Bool {
         return save(value, forKey: key, requireBiometric: true)
     }
-    
+
     /// Retrieve a string value from Keychain with biometric authentication (convenience method)
     /// - Parameters:
     ///   - key: The key to identify the value
@@ -305,7 +326,7 @@ extension KeychainHelper {
     func getWithBiometric(forKey key: String, reason: String) -> String? {
         return get(forKey: key, prompt: reason)
     }
-    
+
     /// Update a string value in Keychain with biometric protection (convenience method)
     /// - Parameters:
     ///   - value: The new value

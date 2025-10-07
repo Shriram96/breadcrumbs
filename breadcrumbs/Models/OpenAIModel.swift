@@ -11,22 +11,7 @@ import OpenAI
 /// OpenAI implementation of the AIModel protocol
 /// Uses the MacPaw/OpenAI Swift package for API communication
 final class OpenAIModel: AIModel {
-
-    // MARK: - Properties
-
-    private let client: OpenAI
-    private let modelType: Model
-
-    /// Unique identifier for OpenAI provider
-    let providerId: String = "openai"
-
-    /// Display name based on selected model
-    var displayName: String {
-        modelType  // Model is a String typealias, not an enum
-    }
-
-    /// OpenAI supports tool/function calling
-    let supportsTools: Bool = true
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -48,6 +33,19 @@ final class OpenAIModel: AIModel {
         self.modelType = model
     }
 
+    // MARK: Internal
+
+    /// Unique identifier for OpenAI provider
+    let providerID: String = "openai"
+
+    /// OpenAI supports tool/function calling
+    let supportsTools: Bool = true
+
+    /// Display name based on selected model
+    var displayName: String {
+        modelType // Model is a String typealias, not an enum
+    }
+
     // MARK: - AIModel Protocol Implementation
 
     /// Send a chat completion request to OpenAI
@@ -58,10 +56,11 @@ final class OpenAIModel: AIModel {
     func sendMessage(
         messages: [ChatMessage],
         tools: [AITool]?
-    ) async throws -> ChatMessage {
-
+    ) async throws
+        -> ChatMessage
+    {
         Logger.tools("OpenAIModel.sendMessage: Called with \(messages.count) messages and \(tools?.count ?? 0) tools")
-        
+
         // Convert our messages to OpenAI format
         let openAIMessages = try convertMessagesToOpenAI(messages)
         Logger.tools("OpenAIModel.sendMessage: Converted to \(openAIMessages.count) OpenAI messages")
@@ -91,7 +90,10 @@ final class OpenAIModel: AIModel {
 
         // Convert OpenAI response to our ChatMessage format
         let response = try convertOpenAIResponseToMessage(choice.message)
-        Logger.tools("OpenAIModel.sendMessage: Converted response - role: \(response.role), content: \(response.content.prefix(50))..., toolCalls: \(response.toolCalls?.count ?? 0)")
+        Logger
+            .tools(
+                "OpenAIModel.sendMessage: Converted response - role: \(response.role), content: \(response.content.prefix(50))..., toolCalls: \(response.toolCalls?.count ?? 0)"
+            )
         return response
     }
 
@@ -103,8 +105,9 @@ final class OpenAIModel: AIModel {
     func streamMessage(
         messages: [ChatMessage],
         tools: [AITool]?
-    ) async throws -> AsyncThrowingStream<String, Error> {
-
+    ) async throws
+        -> AsyncThrowingStream<String, Error>
+    {
         // Convert our messages to OpenAI format
         let openAIMessages = try convertMessagesToOpenAI(messages)
 
@@ -138,6 +141,11 @@ final class OpenAIModel: AIModel {
         }
     }
 
+    // MARK: Private
+
+    private let client: OpenAI
+    private let modelType: Model
+
     // MARK: - Private Helper Methods
 
     /// Execute non-streaming chat request with async/await
@@ -159,12 +167,13 @@ final class OpenAIModel: AIModel {
 
             _ = client.chatsStream(query: query) { result in
                 switch result {
-                case .success(let streamResult):
+                case let .success(streamResult):
                     // Extract delta content from stream
                     if let content = streamResult.choices.first?.delta.content {
                         onChunk(content)
                     }
-                case .failure(let error):
+
+                case let .failure(error):
                     if !hasResumed {
                         hasResumed = true
                         continuation.resume(throwing: error)
@@ -189,10 +198,13 @@ final class OpenAIModel: AIModel {
     /// Convert our ChatMessage array to OpenAI's message format
     private func convertMessagesToOpenAI(_ messages: [ChatMessage]) throws -> [ChatQuery.ChatCompletionMessageParam] {
         Logger.tools("OpenAIModel.convertMessagesToOpenAI: Converting \(messages.count) messages")
-        
+
         return messages.compactMap { message -> ChatQuery.ChatCompletionMessageParam? in
-            Logger.tools("OpenAIModel.convertMessagesToOpenAI: Converting message - role: \(message.role), content: \(message.content.prefix(50))..., toolCalls: \(message.toolCalls?.count ?? 0), toolCallId: \(message.toolCallId ?? "nil")")
-            
+            Logger
+                .tools(
+                    "OpenAIModel.convertMessagesToOpenAI: Converting message - role: \(message.role), content: \(message.content.prefix(50))..., toolCalls: \(message.toolCalls?.count ?? 0), toolCallId: \(message.toolCallID ?? "nil")"
+                )
+
             switch message.role {
             case .system:
                 return .system(
@@ -233,14 +245,21 @@ final class OpenAIModel: AIModel {
 
             case .tool:
                 // Tool result messages - must include the tool_call_id
-                guard let toolCallId = message.toolCallId else {
+                guard let toolCallID = message.toolCallID else {
                     // Skip tool messages without ID (shouldn't happen)
-                    Logger.tools("OpenAIModel.convertMessagesToOpenAI: WARNING - Tool message without toolCallId, skipping")
+                    Logger
+                        .tools(
+                            "OpenAIModel.convertMessagesToOpenAI: WARNING - Tool message without toolCallId, skipping"
+                        )
                     return nil
                 }
-                Logger.tools("OpenAIModel.convertMessagesToOpenAI: Converting tool message with toolCallId: \(toolCallId)")
+
+                Logger
+                    .tools(
+                        "OpenAIModel.convertMessagesToOpenAI: Converting tool message with toolCallId: \(toolCallID)"
+                    )
                 return .tool(
-                    .init(content: .textContent(message.content), toolCallId: toolCallId)
+                    .init(content: .textContent(message.content), toolCallID: toolCallID)
                 )
             }
         }
@@ -266,7 +285,7 @@ final class OpenAIModel: AIModel {
 
         // Add properties if present
         if let schemaProperties = schema["properties"] as? [String: [String: Any]] {
-            var propsDict: [String: JSONSchema] = [:]
+            var propsDict = [String: JSONSchema]()
             for (key, value) in schemaProperties {
                 propsDict[key] = createJSONSchemaFromDict(value)
             }
@@ -285,7 +304,7 @@ final class OpenAIModel: AIModel {
     private func createJSONSchemaFromDict(_ dict: [String: Any]) -> JSONSchema {
         let typeString = dict["type"] as? String ?? "string"
 
-        var fields: [JSONSchemaField] = []
+        var fields = [JSONSchemaField]()
 
         // Add type field - convert string to JSONSchemaInstanceType
         let instanceType: JSONSchemaInstanceType
@@ -330,10 +349,11 @@ final class OpenAIModel: AIModel {
     /// Convert OpenAI response message to our ChatMessage format
     private func convertOpenAIResponseToMessage(
         _ message: ChatResult.Choice.Message
-    ) throws -> ChatMessage {
-
+    ) throws
+        -> ChatMessage
+    {
         Logger.tools("OpenAIModel.convertOpenAIResponseToMessage: Converting OpenAI response")
-        
+
         // Extract content - message.content is String? in v0.4.6
         let content = message.content ?? ""
         Logger.tools("OpenAIModel.convertOpenAIResponseToMessage: Content: \(content.prefix(50))...")
@@ -343,7 +363,10 @@ final class OpenAIModel: AIModel {
         if let openAIToolCalls = message.toolCalls {
             Logger.tools("OpenAIModel.convertOpenAIResponseToMessage: Found \(openAIToolCalls.count) tool calls")
             toolCalls = openAIToolCalls.map { openAIToolCall in
-                Logger.tools("OpenAIModel.convertOpenAIResponseToMessage: Tool call - ID: \(openAIToolCall.id), name: \(openAIToolCall.function.name)")
+                Logger
+                    .tools(
+                        "OpenAIModel.convertOpenAIResponseToMessage: Tool call - ID: \(openAIToolCall.id), name: \(openAIToolCall.function.name)"
+                    )
                 return ToolCall(
                     id: openAIToolCall.id,
                     name: openAIToolCall.function.name,
@@ -359,8 +382,11 @@ final class OpenAIModel: AIModel {
             content: content,
             toolCalls: toolCalls
         )
-        
-        Logger.tools("OpenAIModel.convertOpenAIResponseToMessage: Created ChatMessage - role: \(result.role), content: \(result.content.prefix(50))..., toolCalls: \(result.toolCalls?.count ?? 0)")
+
+        Logger
+            .tools(
+                "OpenAIModel.convertOpenAIResponseToMessage: Created ChatMessage - role: \(result.role), content: \(result.content.prefix(50))..., toolCalls: \(result.toolCalls?.count ?? 0)"
+            )
         return result
     }
 }

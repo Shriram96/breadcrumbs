@@ -7,6 +7,8 @@
 
 import Foundation
 
+// MARK: - KeychainProtocol
+
 /// Protocol defining keychain operations for dependency injection and testing
 protocol KeychainProtocol {
     func save(_ value: String, forKey key: String, requireBiometric: Bool) -> Bool
@@ -20,15 +22,16 @@ protocol KeychainProtocol {
 }
 
 // MARK: - Convenience Methods
+
 extension KeychainProtocol {
     func save(_ value: String, forKey key: String) -> Bool {
         return save(value, forKey: key, requireBiometric: false)
     }
-    
+
     func get(forKey key: String) -> String? {
         return get(forKey: key, prompt: nil)
     }
-    
+
     func update(_ value: String, forKey key: String) -> Bool {
         return update(value, forKey: key, requireBiometric: false)
     }

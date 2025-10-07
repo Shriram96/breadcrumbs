@@ -1,0 +1,182 @@
+# SwiftLint Configuration for Breadcrumbs
+
+# Paths to include/exclude
+included:
+  - breadcrumbs
+  - breadcrumbsTests
+  - breadcrumbsUITests
+
+excluded:
+  - .build
+  - build
+  - DerivedData
+  - .git
+  - breadcrumbs.xcodeproj
+  - breadcrumbs.xcworkspace
+  - Sources/breadcrumbs-cli
+
+# Rules to disable
+disabled_rules:
+  - trailing_whitespace
+  - todo
+
+# Rules to enable
+opt_in_rules:
+  - array_init
+  - attributes
+  - closure_body_length
+  - closure_end_indentation
+  - closure_spacing
+  - collection_alignment
+  - contains_over_filter_count
+  - contains_over_filter_is_empty
+  - contains_over_first_not_nil
+  - contains_over_range_nil_comparison
+  - discouraged_object_literal
+  - empty_collection_literal
+  - empty_count
+  - empty_string
+  - enum_case_associated_values_count
+  - explicit_init
+  - extension_access_modifier
+  - fallthrough
+  - fatal_error_message
+  - file_header
+  - file_name
+  - first_where
+  - force_unwrapping
+  - function_default_parameter_at_end
+  - identical_operands
+  - implicit_return
+  - joined_default_parameter
+  - last_where
+  - legacy_random
+  - literal_expression_end_indentation
+  - lower_acl_than_parent
+  - modifier_order
+  - nimble_operator
+  - nslocalizedstring_key
+  - number_separator
+  - object_literal
+  - operator_usage_whitespace
+  - overridden_super_call
+  - override_in_extension
+  - pattern_matching_keywords
+  - prefer_self_type_over_type_of_self
+  - prefer_zero_over_explicit_init
+  - prefixed_toplevel_constant
+  - prohibited_interface_builder
+  - prohibited_super_call
+  - quick_discouraged_call
+  - quick_discouraged_focused_test
+  - quick_discouraged_pending_test
+  - reduce_into
+  - redundant_nil_coalescing
+  - redundant_type_annotation
+  - required_enum_case
+  - single_test_class
+  - sorted_first_last
+  - sorted_imports
+  - static_operator
+  - strong_iboutlet
+  - switch_case_on_newline
+  - toggle_bool
+  - unavailable_function
+  - unneeded_parentheses_in_closure_argument
+  - vertical_parameter_alignment_on_call
+  - vertical_whitespace_closing_braces
+  - vertical_whitespace_opening_braces
+  - xct_specific_matcher
+  - yoda_condition
+
+# Custom rules
+custom_rules:
+  # Custom rule for TODO comments
+  todo_comment:
+    name: "TODO Comment"
+    regex: 'TODO:'
+    message: "TODO comments should be resolved before merging"
+    severity: warning
+
+# Analyzer rules
+analyzer_rules:
+  - explicit_self
+  - unused_declaration
+  - unused_import
+
+# File header configuration
+file_header:
+  required_pattern: |
+                    \/\/
+                    \/\/  .*\.swift
+                    \/\/  Breadcrumbs
+                    \/\/
+                    \/\/  Created by .* on \d{1,2}\/\d{1,2}\/\d{4}\.
+                    \/\/  Copyright © \d{4} .*\. All rights reserved\.
+                    \/\/
+
+# Line length configuration
+line_length:
+  warning: 120
+  error: 150
+  ignores_urls: true
+  ignores_function_declarations: true
+  ignores_comments: true
+
+# Function body length
+function_body_length:
+  warning: 50
+  error: 100
+
+# Type body length
+type_body_length:
+  warning: 300
+  error: 500
+
+# File length
+file_length:
+  warning: 500
+  error: 1000
+
+# Cyclomatic complexity
+cyclomatic_complexity:
+  warning: 10
+  error: 20
+
+# Nesting
+nesting:
+  type_level:
+    warning: 3
+    error: 6
+
+# Identifier name rules
+identifier_name:
+  min_length:
+    warning: 2
+    error: 1
+  max_length:
+    warning: 40
+    error: 60
+  excluded:
+    - id
+    - url
+    - uri
+    - api
+    - ui
+    - db
+    - ip
+    - os
+    - tv
+    - vc
+
+# Type name rules
+type_name:
+  min_length:
+    warning: 3
+    error: 1
+  max_length:
+    warning: 40
+    error: 60
+
+# Reporter configuration
+reporter: "xcode"

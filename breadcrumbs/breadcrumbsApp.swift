@@ -5,8 +5,8 @@
 //  Created by Shriram R on 10/5/25.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 @main
 struct breadcrumbsApp: App {
