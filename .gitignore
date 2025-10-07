@@ -1,2 +1,5 @@
 build/
 .build/
+
+# MCP configuration with sensitive tokens
+.mcp.json
