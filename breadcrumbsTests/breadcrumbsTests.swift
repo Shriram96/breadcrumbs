@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import SwiftData
 @testable import breadcrumbs
 
 final class breadcrumbsTests: XCTestCase {
@@ -21,10 +22,10 @@ final class breadcrumbsTests: XCTestCase {
     }
 
     func testAppInitialization() throws {
-        // Test that the app can be initialized without crashing
-        let app = breadcrumbsApp()
-        XCTAssertNotNil(app)
-        XCTAssertNotNil(app.sharedModelContainer)
+        // Test that the core components can be initialized without crashing
+        // Note: breadcrumbsApp is excluded from library target
+        let modelContainer = try ModelContainer(for: Item.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        XCTAssertNotNil(modelContainer)
     }
     
     func testContentViewInitialization() throws {
