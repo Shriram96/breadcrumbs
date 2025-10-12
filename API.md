@@ -629,20 +629,45 @@ curl -X POST http://localhost:8181/api/v1/chat \
 
 ### API Key Security
 
+- **Cryptographically Secure Generation**: API keys are generated using `SecRandomCopyBytes` for cryptographic security
 - **Local Storage**: API keys are stored locally in the application
-- **Bearer Token**: Standard Bearer token authentication
+- **Bearer Token**: Standard Bearer token authentication with constant-time comparison to prevent timing attacks
 - **No Persistence**: Keys are not stored on the server
 - **Regeneration**: Keys can be regenerated at any time
 
 ### Network Security
 
-- **Localhost Only**: Server runs on localhost by default
+- **Localhost Only**: Server runs on localhost by default (127.0.0.1)
 - **HTTPS**: All external API calls use HTTPS
 - **No Data Collection**: No user data is collected or transmitted
+- **Request Size Limits**: 10MB maximum request body size to prevent DoS attacks
+
+### Input Validation
+
+- **Message Length Limits**: Maximum 100,000 characters per message
+- **Empty Message Detection**: Rejects empty messages
+- **Pattern Detection**: Monitors for suspicious patterns (XSS, injection attempts) with security logging
+- **Client Identification**: Logs client IP for all validation failures
+
+### Security Logging
+
+All security-relevant events are logged to the `security` category:
+- Authentication failures (with client IP)
+- Input validation failures
+- Suspicious pattern detection
+- Server start/stop events
+- API key generation/updates
+
+**View security logs**:
+```bash
+log show --predicate 'subsystem == "dale.breadcrumbs" AND category == "security"' --last 1h
+```
+
+See [SECURITY.md](SECURITY.md) for complete security documentation.
 
 ### Rate Limiting
 
-Currently, no rate limiting is implemented. Consider implementing rate limiting for production use:
+Currently, no rate limiting is implemented. See [SECURITY.md](SECURITY.md) for recommendations:
 
 ```swift
 // Example rate limiting middleware

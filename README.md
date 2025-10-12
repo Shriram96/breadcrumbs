@@ -20,10 +20,16 @@ Breadcrumbs is an intelligent macOS system diagnostic assistant that combines AI
 - **Remote API Access**: HTTP server for external tool integration
 
 ### Security & Privacy
+- **Cryptographically Secure API Keys**: Generated using macOS SecRandomCopyBytes
+- **Timing Attack Protection**: Constant-time API key comparison
+- **Input Validation**: Message length limits and suspicious pattern detection
 - **Biometric Authentication**: Touch ID/Face ID protection for API keys
 - **Local Processing**: All diagnostics run locally on your machine
 - **Secure Storage**: API keys stored in macOS Keychain with biometric protection
 - **No Data Collection**: No user data is sent to external services
+- **Security Logging**: Comprehensive audit trail of all security events
+
+📖 **Security details:** See [SECURITY.md](SECURITY.md)
 
 ---
 
@@ -47,6 +53,7 @@ Breadcrumbs is an intelligent macOS system diagnostic assistant that combines AI
 ### 📚 Additional Resources
 - [Vision & Roadmap](#-vision-ai-powered-endpoint-self-healing)
 - [Permissions Guide](PERMISSIONS.md)
+- [Security Documentation](SECURITY.md)
 - [License](#-license)
 
 ---

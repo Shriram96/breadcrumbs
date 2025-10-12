@@ -11,6 +11,7 @@ enum Logger {
     static let chat: OSLog = .init(subsystem: subsystem, category: "chat")
     static let tools: OSLog = .init(subsystem: subsystem, category: "tools")
     static let ui: OSLog = .init(subsystem: subsystem, category: "ui")
+    static let security: OSLog = .init(subsystem: subsystem, category: "security")
 
     // MARK: - Logging Methods
 
@@ -42,6 +43,10 @@ enum Logger {
 
     static func ui(_ message: String) {
         debug(message, category: ui)
+    }
+    
+    static func security(_ message: String, level: OSLogType = .error) {
+        log(message, category: security, level: level)
     }
 
     // MARK: Private

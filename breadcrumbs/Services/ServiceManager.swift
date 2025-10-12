@@ -7,6 +7,7 @@
 
 import Combine
 import Foundation
+import Security
 import SwiftUI
 
 // MARK: - ServiceManager
@@ -25,6 +26,7 @@ final class ServiceManager: ObservableObject {
         // Generate a random API key if using default
         if apiKey == "demo-key-123" {
             apiKey = generateAPIKey()
+            Logger.security("🔒 Generated new cryptographically secure API key on initialization", level: .default)
         }
     }
 
@@ -187,6 +189,7 @@ final class ServiceManager: ObservableObject {
         }
 
         apiKey = newKey
+        Logger.security("🔒 API key updated - server will use new key for authentication", level: .default)
 
         if wasRunning {
             await startServer()
@@ -196,6 +199,7 @@ final class ServiceManager: ObservableObject {
     /// Generate a new random API key
     func generateNewAPIKey() async {
         let newKey = generateAPIKey()
+        Logger.security("🔒 Generating new cryptographically secure API key", level: .default)
         await updateAPIKey(newKey)
     }
 
@@ -233,17 +237,33 @@ final class ServiceManager: ObservableObject {
     }
 
     private func generateAPIKey() -> String {
-        let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-        let keyLength = 32
-        var result = ""
-
-        for _ in 0..<keyLength {
-            let randomIndex = Int.random(in: 0..<characters.count)
-            let character = characters[characters.index(characters.startIndex, offsetBy: randomIndex)]
-            result.append(character)
+        // Use cryptographically secure random generation
+        var bytes = [UInt8](repeating: 0, count: 32)
+        let result = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        
+        guard result == errSecSuccess else {
+            Logger.service("⚠️ Failed to generate cryptographically secure random bytes, falling back to less secure method")
+            // Fallback to less secure but still functional method
+            let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+            let keyLength = 32
+            var fallbackResult = ""
+            for _ in 0..<keyLength {
+                let randomIndex = Int.random(in: 0..<characters.count)
+                let character = characters[characters.index(characters.startIndex, offsetBy: randomIndex)]
+                fallbackResult.append(character)
+            }
+            return fallbackResult
         }
-
-        return result
+        
+        // Convert bytes to base64 for a safe string representation
+        let data = Data(bytes)
+        let base64String = data.base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+        
+        Logger.service("✅ Generated cryptographically secure API key")
+        return base64String
     }
 }
 
