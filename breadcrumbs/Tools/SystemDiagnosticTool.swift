@@ -5,9 +5,13 @@
 //  Comprehensive system diagnostic report collector using native macOS APIs
 //
 
+#if canImport(AppKit)
 import AppKit
+#endif
 import Foundation
+#if canImport(os)
 import os
+#endif
 import System
 
 // MARK: - SystemDiagnosticInput
@@ -774,6 +778,7 @@ final class SystemDiagnosticTool: AITool {
     {
         var samples = [AppSample]()
 
+        #if canImport(AppKit)
         // Get running applications
         let runningApps = NSWorkspace.shared.runningApplications
 
@@ -814,6 +819,7 @@ final class SystemDiagnosticTool: AITool {
 
             samples.append(sample)
         }
+        #endif
 
         return samples
     }

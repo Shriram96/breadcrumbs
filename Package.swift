@@ -41,7 +41,17 @@ let package = Package(
                 "Info.plist",
                 "breadcrumbs.entitlements", 
                 "Assets.xcassets",
-                "breadcrumbsApp.swift"
+                "breadcrumbsApp.swift",
+                "ContentView.swift",
+                "Views/ChatView.swift",
+                "Views/SettingsView.swift",
+                "Views/ServerSettingsView.swift",
+                "ViewModels/ChatViewModel.swift",
+                "Services/ServiceManager.swift",
+                "Services/VaporServer.swift",
+                "Tools/AppCheckerTool.swift",
+                "Tools/SystemDiagnosticTool.swift",
+                "Item.swift"
             ],
             swiftSettings: [
                 .define("SWIFT_APPROACHABLE_CONCURRENCY"),
@@ -54,7 +64,10 @@ let package = Package(
             ],
             path: "breadcrumbsTests",
             exclude: [
-                "README.md"
+                "README.md",
+                "ViewModels/ChatViewModelTests.swift",
+                "Integration/AppIntegrationTests.swift",
+                "Models/ItemTests.swift"
             ],
             swiftSettings: [
                 .define("UNIT_TESTS"),

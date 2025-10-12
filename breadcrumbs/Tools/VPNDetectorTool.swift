@@ -6,9 +6,15 @@
 //
 
 import Foundation
+#if canImport(Network)
 import Network
+#endif
+#if canImport(NetworkExtension)
 import NetworkExtension
+#endif
+#if canImport(SystemConfiguration)
 import SystemConfiguration
+#endif
 
 // MARK: - VPNDetectorInput
 
