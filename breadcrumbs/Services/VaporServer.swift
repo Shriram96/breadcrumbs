@@ -63,6 +63,7 @@ class VaporServer: ObservableObject {
         }
 
         Logger.server("🚀 Starting VaporServer on port: \(port)")
+        Logger.security("🔒 Server starting on localhost:\(port) - API will be accessible with API key authentication", level: .default)
 
         // Configure Vapor app
         let env = try Environment.detect()
@@ -73,6 +74,7 @@ class VaporServer: ObservableObject {
         app.http.server.configuration.port = port
 
         Logger.server("📡 Configured server hostname: 127.0.0.1, port: \(port)")
+        Logger.security("🔒 Server bound to localhost only (127.0.0.1) - not accessible from external networks", level: .default)
 
         // Configure routes
         try configureRoutes(app)
@@ -99,6 +101,7 @@ class VaporServer: ObservableObject {
 
         Logger.server("✅ Vapor HTTP Server started successfully on port \(port)")
         Logger.server("🌐 Server accessible at: http://127.0.0.1:\(port)")
+        Logger.security("🔒 HTTP Server is now running and accepting authenticated requests", level: .default)
     }
 
     /// Stop the Vapor HTTP server
@@ -109,6 +112,7 @@ class VaporServer: ObservableObject {
         }
 
         Logger.server("🛑 Stopping Vapor HTTP Server...")
+        Logger.security("🔒 Server stopping - API will no longer be accessible", level: .default)
 
         // Shutdown the application gracefully
         if let app = app {
@@ -131,6 +135,7 @@ class VaporServer: ObservableObject {
         isRunning = false
 
         Logger.server("✅ Vapor HTTP Server stopped")
+        Logger.security("🔒 HTTP Server stopped successfully", level: .default)
     }
 
     // MARK: Private
@@ -152,10 +157,15 @@ class VaporServer: ObservableObject {
         // Middleware for CORS
         app.middleware.use(CORSMiddleware(), at: .beginning)
         Logger.server("🌐 CORS middleware configured")
+        Logger.server("⚠️ Security Note: CORS is configured to allow all origins (*). This is acceptable for localhost-only deployment but should be restricted for production use.")
 
         // Middleware for API key authentication
         app.middleware.use(APIKeyMiddleware(apiKey: apiKey), at: .beginning)
         Logger.server("🔐 API key authentication middleware configured")
+        
+        // Configure request body size limits (10MB max to prevent DoS)
+        app.routes.defaultMaxBodySize = "10mb"
+        Logger.server("🛡️ Request body size limit set to 10MB")
 
         // API routes
         let api = app.grouped("api", "v1")
@@ -267,13 +277,34 @@ class VaporServer: ObservableObject {
 
     private func handleChatRequest(_ request: ChatRequest, req: Request) async throws -> ChatResponse {
         Logger.server("🔄 Starting chat request processing...")
+        
+        let clientAddr = req.remoteAddress?.description ?? "unknown"
+
+        // Input validation
+        guard !request.message.isEmpty else {
+            Logger.security("🔒 Validation failed: Empty message from \(clientAddr)")
+            throw Abort(.badRequest, reason: "Message cannot be empty")
+        }
+        
+        // Limit message length to prevent abuse (100KB max)
+        let maxMessageLength = 100_000
+        guard request.message.count <= maxMessageLength else {
+            Logger.security("🔒 Validation failed: Message too long (\(request.message.count) chars) from \(clientAddr)")
+            throw Abort(.badRequest, reason: "Message exceeds maximum length of \(maxMessageLength) characters")
+        }
+        
+        // Basic sanitization check - detect potential injection attempts
+        if containsSuspiciousPatterns(request.message) {
+            Logger.security("🔒 Security: Suspicious patterns detected in message from \(clientAddr)", level: .default)
+            // Don't block but log for monitoring
+        }
 
         await MainActor.run {
             self.requestCount += 1
             self.lastRequest = "POST /api/v1/chat - \(Date())"
         }
 
-        Logger.server("📝 Processing chat request: \(request.message)")
+        Logger.server("📝 Processing chat request: \(request.message.prefix(100))...")
 
         do {
             // Create chat messages
@@ -426,6 +457,18 @@ class VaporServer: ObservableObject {
     }
 
     // MARK: - Helper Functions
+    
+    // Check for suspicious patterns that might indicate injection attempts
+    private func containsSuspiciousPatterns(_ text: String) -> Bool {
+        let suspiciousPatterns = [
+            "<script", "javascript:", "onerror=", "onload=",
+            "eval(", "exec(", "../", "..\\",
+            "file://", "data:text/html"
+        ]
+        
+        let lowercaseText = text.lowercased()
+        return suspiciousPatterns.contains { lowercaseText.contains($0) }
+    }
 
     private func withTimeout<T: Sendable>(seconds: TimeInterval, operation: @escaping @Sendable () async throws -> T) async throws -> T {
         return try await withThrowingTaskGroup(of: T.self) { group in
@@ -540,13 +583,38 @@ struct APIKeyMiddleware: Middleware {
 
         // Check for API key in Authorization header
         guard let authHeader = request.headers.bearerAuthorization else {
+            let clientAddr = request.remoteAddress?.description ?? "unknown"
+            Logger.security("🔒 Authentication failed: Missing Authorization header from \(clientAddr) for \(request.url.path)")
             return request.eventLoop.makeFailedFuture(Abort(.unauthorized, reason: "Missing Authorization header"))
         }
-        guard authHeader.token == apiKey else {
+        
+        // Use constant-time comparison to prevent timing attacks
+        guard constantTimeCompare(authHeader.token, apiKey) else {
+            let clientAddr = request.remoteAddress?.description ?? "unknown"
+            Logger.security("🔒 Authentication failed: Invalid API key from \(clientAddr) for \(request.url.path)")
             return request.eventLoop.makeFailedFuture(Abort(.unauthorized, reason: "Invalid API key"))
         }
 
+        let clientAddr = request.remoteAddress?.description ?? "unknown"
+        Logger.server("✅ Authentication successful for request to \(request.url.path) from \(clientAddr)")
         return next.respond(to: request)
+    }
+    
+    // Constant-time string comparison to prevent timing attacks
+    private func constantTimeCompare(_ a: String, _ b: String) -> Bool {
+        guard a.count == b.count else {
+            return false
+        }
+        
+        let aBytes = Array(a.utf8)
+        let bBytes = Array(b.utf8)
+        
+        var result: UInt8 = 0
+        for i in 0..<aBytes.count {
+            result |= aBytes[i] ^ bBytes[i]
+        }
+        
+        return result == 0
     }
 }
 
