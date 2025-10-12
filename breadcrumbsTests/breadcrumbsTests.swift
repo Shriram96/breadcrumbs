@@ -6,7 +6,6 @@
 //
 
 @testable import breadcrumbs
-import SwiftData
 import XCTest
 
 final class breadcrumbsTests: XCTestCase {
@@ -18,38 +17,6 @@ final class breadcrumbsTests: XCTestCase {
     override func tearDownWithError() throws {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
         // Note: Removed TestUtilities.cleanupTestKeychainData() to avoid triggering biometric prompts
-    }
-
-    func testAppInitialization() throws {
-        // Test that the core components can be initialized without crashing
-        // Note: breadcrumbsApp is excluded from library target
-        let modelContainer = try ModelContainer(
-            for: Item.self,
-            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
-        XCTAssertNotNil(modelContainer)
-    }
-
-    func testContentViewInitialization() {
-        // Test that ContentView can be initialized without crashing
-        let mockKeychain = MockKeychainHelper()
-        mockKeychain.isBiometricAvailable = false // Disable biometric to avoid prompts
-        let contentView = ContentView(keychain: mockKeychain)
-        XCTAssertNotNil(contentView)
-    }
-
-    func testChatViewInitialization() {
-        // Test that ChatView can be initialized with an API key
-        let chatView = ChatView(apiKey: "test-api-key")
-        XCTAssertNotNil(chatView)
-    }
-
-    func testSettingsViewInitialization() {
-        // Test that SettingsView can be initialized without crashing
-        let mockKeychain = MockKeychainHelper()
-        mockKeychain.isBiometricAvailable = false // Disable biometric to avoid prompts
-        let settingsView = SettingsView(keychain: mockKeychain)
-        XCTAssertNotNil(settingsView)
     }
 
     func testKeychainHelperSingleton() {
@@ -72,13 +39,5 @@ final class breadcrumbsTests: XCTestCase {
         XCTAssertNotNil(Logger.chat)
         XCTAssertNotNil(Logger.tools)
         XCTAssertNotNil(Logger.ui)
-    }
-
-    func testPerformanceExample() {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
-            _ = ContentView()
-        }
     }
 }

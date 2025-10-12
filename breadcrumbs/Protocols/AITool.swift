@@ -5,7 +5,6 @@
 //  AI Tool Protocol - Interface for tools that AI models can invoke
 //
 
-import Combine
 import Foundation
 
 // MARK: - ToolParameterSchema
@@ -155,7 +154,7 @@ final class ToolRegistry: ObservableObject {
             ToolRegistry()
         }
 
-    @Published private(set) var tools: [String: AITool] = [:]
+    private(set) var tools: [String: AITool] = [:]
 
     /// Register a tool in the registry
     func register(_ tool: AITool) {
@@ -192,7 +191,10 @@ final class ToolRegistry: ObservableObject {
         // Register system diagnostic tools
         register(VPNDetectorTool())
         register(DNSReachabilityTool())
+        // Note: AppCheckerTool and SystemDiagnosticTool require AppKit/System and are excluded from SPM builds
+        #if canImport(AppKit)
         register(AppCheckerTool())
         register(SystemDiagnosticTool())
+        #endif
     }
 }
