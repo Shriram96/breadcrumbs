@@ -131,7 +131,9 @@ final class SecurityTests: XCTestCase {
     
     func testMessageLengthValidation() {
         // Test that we can validate message length
-        let maxLength = 100_000
+        // Note: VaporServer.maxMessageLength is internal to the VaporServer class
+        // We replicate the value here but should keep in sync with production code
+        let maxLength = 100_000 // Should match VaporServer.maxMessageLength
         
         // Message at exactly max length should be valid
         let maxMessage = String(repeating: "a", count: maxLength)

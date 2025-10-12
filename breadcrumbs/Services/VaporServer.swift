@@ -17,6 +17,14 @@ import Vapor
 @MainActor
 class VaporServer: ObservableObject {
     // MARK: Lifecycle
+    
+    // MARK: - Constants
+    
+    /// Maximum allowed message length for chat requests (100KB)
+    static let maxMessageLength = 100_000
+    
+    /// Maximum request body size for all requests
+    static let maxRequestBodySize = "10mb"
 
     // MARK: - Initialization
 
@@ -164,8 +172,8 @@ class VaporServer: ObservableObject {
         Logger.server("🔐 API key authentication middleware configured")
         
         // Configure request body size limits (10MB max to prevent DoS)
-        app.routes.defaultMaxBodySize = "10mb"
-        Logger.server("🛡️ Request body size limit set to 10MB")
+        app.routes.defaultMaxBodySize = VaporServer.maxRequestBodySize
+        Logger.server("🛡️ Request body size limit set to \(VaporServer.maxRequestBodySize)")
 
         // API routes
         let api = app.grouped("api", "v1")
@@ -287,10 +295,9 @@ class VaporServer: ObservableObject {
         }
         
         // Limit message length to prevent abuse (100KB max)
-        let maxMessageLength = 100_000
-        guard request.message.count <= maxMessageLength else {
+        guard request.message.count <= VaporServer.maxMessageLength else {
             Logger.security("🔒 Validation failed: Message too long (\(request.message.count) chars) from \(clientAddr)")
-            throw Abort(.badRequest, reason: "Message exceeds maximum length of \(maxMessageLength) characters")
+            throw Abort(.badRequest, reason: "Message exceeds maximum length of \(VaporServer.maxMessageLength) characters")
         }
         
         // Basic sanitization check - detect potential injection attempts
