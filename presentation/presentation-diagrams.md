@@ -230,10 +230,10 @@ graph TB
 
 ```mermaid
 flowchart TD
-    A[User: "My VPN isn't working"] --> B[AI Assistant]
+    A["User: My VPN isn't working"] --> B[AI Assistant]
     B --> C[Uses VPNDetectorTool]
-    C --> D[Tool Result:<br/>VPN Status: Not Connected<br/>Last Known: IKEv2, utun0<br/>Disconnected Since: 2:45 PM]
-    D --> E[AI Response:<br/>Your VPN is disconnected.<br/>Try these steps:<br/>1. Check network<br/>2. Restart VPN<br/>3. Check credentials]
+    C --> D["Tool Result:<br/>VPN Status: Not Connected<br/>Last Known: IKEv2, utun0<br/>Disconnected Since: 2:45 PM"]
+    D --> E["AI Response:<br/>Your VPN is disconnected.<br/>Try these steps:<br/>1. Check network<br/>2. Restart VPN<br/>3. Check credentials"]
     
     style A fill:#e1f5fe
     style B fill:#fff3e0
