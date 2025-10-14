@@ -1,5 +1,10 @@
 build/
 .build/
 
+# Coverage reports
+coverage.lcov
+*.profdata
+*.profraw
+
 # MCP configuration with sensitive tokens
 .mcp.json
