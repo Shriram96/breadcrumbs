@@ -30,6 +30,7 @@ final class breadcrumbsTests: XCTestCase {
         XCTAssertNotNil(modelContainer)
     }
 
+    @MainActor
     func testContentViewInitialization() {
         // Test that ContentView can be initialized without crashing
         let mockKeychain = MockKeychainHelper()
@@ -38,12 +39,14 @@ final class breadcrumbsTests: XCTestCase {
         XCTAssertNotNil(contentView)
     }
 
+    @MainActor
     func testChatViewInitialization() {
         // Test that ChatView can be initialized with an API key
         let chatView = ChatView(apiKey: "test-api-key")
         XCTAssertNotNil(chatView)
     }
 
+    @MainActor
     func testSettingsViewInitialization() {
         // Test that SettingsView can be initialized without crashing
         let mockKeychain = MockKeychainHelper()
@@ -74,6 +77,7 @@ final class breadcrumbsTests: XCTestCase {
         XCTAssertNotNil(Logger.ui)
     }
 
+    @MainActor
     func testPerformanceExample() {
         // This is an example of a performance test case.
         self.measure {

@@ -8,6 +8,7 @@
 @testable import breadcrumbs
 import XCTest
 
+@MainActor
 final class DNSReachabilityToolTests: XCTestCase {
     var tool: DNSReachabilityTool!
 
@@ -313,9 +314,9 @@ final class DNSReachabilityToolTests: XCTestCase {
         measure {
             let expectation = XCTestExpectation(description: "DNS checks complete")
 
-            Task {
+            Task { @MainActor in
                 for domain in domains {
-                    let arguments = ["domain": domain]
+                    let arguments = ["domain": domain] as [String: Any]
                     do {
                         _ = try await tool.execute(arguments: arguments)
                     } catch {

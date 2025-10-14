@@ -7,6 +7,7 @@
 
 @testable import breadcrumbs
 import Foundation
+import NIOConcurrencyHelpers
 import XCTest
 
 // MARK: - TimeoutError
@@ -171,9 +172,9 @@ enum TestUtilities {
     // MARK: - Async Test Helpers
 
     /// Execute an async operation with a timeout to prevent infinite loops
-    static func withTimeout<T>(
+    static func withTimeout<T: Sendable>(
         seconds: TimeInterval,
-        operation: @escaping () async throws -> T
+        operation: @escaping @Sendable () async throws -> T
     ) async throws
         -> T
     {
@@ -211,16 +212,16 @@ enum TestUtilities {
         timeout: TimeInterval = 5.0,
         file: StaticString = #file,
         line: UInt = #line,
-        operation: @escaping () async throws -> Void
+        operation: @escaping @Sendable () async throws -> Void
     ) {
         let expectation = XCTestExpectation(description: "Async operation")
 
-        Task {
+        Task { @Sendable in
             do {
                 try await operation()
-                expectation.fulfill()
+                await MainActor.run { expectation.fulfill() }
             } catch {
-                XCTFail("Async operation failed: \(error)", file: file, line: line)
+                await MainActor.run { XCTFail("Async operation failed: \(error)", file: file, line: line) }
             }
         }
 
@@ -290,6 +291,7 @@ enum TestUtilities {
     }
 
     /// Configure a MockKeychainHelper for success
+    @MainActor
     static func configureMockKeychainSuccess(
         _ mockKeychain: MockKeychainHelper,
         storedValue: String? = nil
@@ -300,6 +302,7 @@ enum TestUtilities {
     }
 
     /// Configure a MockKeychainHelper for error
+    @MainActor
     static func configureMockKeychainError(
         _ mockKeychain: MockKeychainHelper,
         error: Error? = nil
@@ -356,19 +359,19 @@ enum TestUtilities {
         timeout: TimeInterval = 5.0,
         file: StaticString = #file,
         line: UInt = #line,
-        operation: @escaping () async throws -> Void
+        operation: @escaping @Sendable () async throws -> Void
     )
         -> TimeInterval
     {
         let startTime = CFAbsoluteTimeGetCurrent()
         let expectation = XCTestExpectation(description: "Async operation timing")
 
-        Task {
+        Task { @Sendable in
             do {
                 try await operation()
-                expectation.fulfill()
+                await MainActor.run { expectation.fulfill() }
             } catch {
-                XCTFail("Async operation failed: \(error)", file: file, line: line)
+                await MainActor.run { XCTFail("Async operation failed: \(error)", file: file, line: line) }
             }
         }
 
@@ -419,45 +422,11 @@ enum TestUtilities {
 // MARK: - XCTest Extensions
 
 extension XCTestCase {
-    /// Wait for an async operation with a timeout
-    func waitForAsync<T>(
-        timeout: TimeInterval = 5.0,
-        operation: @escaping () async throws -> T
-    ) throws
-        -> T
-    {
-        var result: T?
-        var thrownError: Error?
-        let expectation = XCTestExpectation(description: "Async operation")
-
-        Task {
-            do {
-                result = try await operation()
-                expectation.fulfill()
-            } catch {
-                thrownError = error
-                expectation.fulfill()
-            }
-        }
-
-        wait(for: [expectation], timeout: timeout)
-
-        if let error = thrownError {
-            throw error
-        }
-
-        guard let result = result else {
-            throw NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "No result returned"])
-        }
-
-        return result
-    }
-
     /// Assert that an async operation throws a specific error
     func assertAsyncThrows<T>(
         _ expectedError: Error,
         timeout: TimeInterval = 5.0,
-        operation: @escaping () async throws -> T
+        operation: @escaping @Sendable () async throws -> T
     ) {
         let expectation = XCTestExpectation(description: "Async operation should throw")
 
@@ -475,18 +444,19 @@ extension XCTestCase {
     }
 
     /// Assert that an async operation completes successfully
-    func assertAsyncSucceeds<T>(
+    func assertAsyncSucceeds<T: Sendable>(
         timeout: TimeInterval = 5.0,
-        operation: @escaping () async throws -> T
+        operation: @escaping @Sendable () async throws -> T
     )
         -> T?
     {
-        var result: T?
         let expectation = XCTestExpectation(description: "Async operation should succeed")
+        let resultBox = NIOLockedValueBox<T?>(nil)
 
-        Task {
+        Task { @Sendable in
             do {
-                result = try await operation()
+                let result = try await operation()
+                resultBox.withLockedValue { $0 = result }
                 expectation.fulfill()
             } catch {
                 XCTFail("Expected operation to succeed, but it threw: \(error)")
@@ -494,6 +464,6 @@ extension XCTestCase {
         }
 
         wait(for: [expectation], timeout: timeout)
-        return result
+        return resultBox.withLockedValue { $0 }
     }
 }

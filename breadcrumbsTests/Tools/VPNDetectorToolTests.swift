@@ -10,15 +10,18 @@ import Network
 import NetworkExtension
 import XCTest
 
+@MainActor
 final class VPNDetectorToolTests: XCTestCase {
     var vpnDetectorTool: VPNDetectorTool!
 
     override func setUpWithError() throws {
+        try super.setUpWithError()
         vpnDetectorTool = VPNDetectorTool()
     }
 
     override func tearDownWithError() throws {
         vpnDetectorTool = nil
+        try super.tearDownWithError()
     }
 
     // MARK: - Tool Properties Tests

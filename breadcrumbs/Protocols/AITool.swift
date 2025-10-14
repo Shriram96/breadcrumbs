@@ -12,7 +12,7 @@ import Foundation
 
 /// A sendable wrapper for tool parameter schemas
 /// Represents JSON Schema in a type-safe, thread-safe manner
-struct ToolParameterSchema: @unchecked Sendable {
+public struct ToolParameterSchema: @unchecked Sendable {
     // MARK: Lifecycle
 
     init(_ schema: [String: Any]) {
@@ -45,7 +45,7 @@ protocol ToolOutput: Sendable {
 // MARK: - AITool
 
 /// Protocol that all tools must conform to for AI model integration
-protocol AITool: Sendable {
+public protocol AITool: Sendable {
     /// Unique identifier for the tool (must match function name in tool definition)
     var name: String { get }
 
@@ -112,14 +112,14 @@ extension AITool {
 // MARK: - ToolError
 
 /// Errors that can occur during tool execution
-enum ToolError: LocalizedError {
+public enum ToolError: LocalizedError {
     case invalidArguments(String)
     case executionFailed(String)
     case toolNotFound(String)
 
     // MARK: Internal
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case let .invalidArguments(message):
             return "Invalid tool arguments: \(message)"
@@ -135,7 +135,7 @@ enum ToolError: LocalizedError {
 
 /// Tool registry to manage available tools
 @MainActor
-final class ToolRegistry: ObservableObject {
+open class ToolRegistry: ObservableObject {
     // MARK: Lifecycle
 
     private init() {
@@ -158,27 +158,27 @@ final class ToolRegistry: ObservableObject {
     @Published private(set) var tools: [String: AITool] = [:]
 
     /// Register a tool in the registry
-    func register(_ tool: AITool) {
+    public func register(_ tool: AITool) {
         tools[tool.name] = tool
     }
 
     /// Unregister a tool from the registry
-    func unregister(toolName: String) {
+    public func unregister(toolName: String) {
         tools.removeValue(forKey: toolName)
     }
 
     /// Get a tool by name
-    func getTool(named name: String) -> AITool? {
+    public func getTool(named name: String) -> AITool? {
         return tools[name]
     }
 
     /// Get all registered tools as an array
-    func getAllTools() -> [AITool] {
+    public func getAllTools() -> [AITool] {
         return Array(tools.values)
     }
 
     /// Execute a tool by name with provided arguments
-    func executeTool(name: String, arguments: [String: Any]) async throws -> String {
+    public func executeTool(name: String, arguments: [String: Any]) async throws -> String {
         guard let tool = tools[name] else {
             throw ToolError.toolNotFound(name)
         }

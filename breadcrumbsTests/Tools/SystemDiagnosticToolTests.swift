@@ -8,6 +8,7 @@
 @testable import breadcrumbs
 import XCTest
 
+@MainActor
 final class SystemDiagnosticToolTests: XCTestCase {
     var tool: SystemDiagnosticTool!
 

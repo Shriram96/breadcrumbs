@@ -70,6 +70,7 @@ final class AppIntegrationTests: XCTestCase {
 
     // MARK: - ContentView Integration Tests
 
+    @MainActor
     func testContentViewInitialization() {
         // Given & When
         let mockKeychain = MockKeychainHelper()
@@ -81,6 +82,7 @@ final class AppIntegrationTests: XCTestCase {
         XCTAssertNotNil(contentView)
     }
 
+    @MainActor
     func testContentViewWithAPIKey() {
         // Given
         let apiKey = "test-api-key"
@@ -94,6 +96,7 @@ final class AppIntegrationTests: XCTestCase {
 
     // MARK: - ChatView Integration Tests
 
+    @MainActor
     func testChatViewInitialization() {
         // Given
         let apiKey = "test-api-key"
@@ -130,6 +133,7 @@ final class AppIntegrationTests: XCTestCase {
 
     // MARK: - SettingsView Integration Tests
 
+    @MainActor
     func testSettingsViewInitialization() {
         // Skip this test in unit test runs to avoid UI/keychain access
         #if !UNIT_TESTS
@@ -185,6 +189,7 @@ final class AppIntegrationTests: XCTestCase {
 
     // MARK: - Keychain Integration Tests
 
+    @MainActor
     func testKeychainHelperIntegration() {
         // Given
         let mockKeychain = MockKeychainHelper()
@@ -205,6 +210,7 @@ final class AppIntegrationTests: XCTestCase {
         XCTAssertTrue(deleteResult)
     }
 
+    @MainActor
     func testKeychainHelperWithBiometricIntegration() {
         // Given
         let mockKeychain = MockKeychainHelper()
@@ -360,18 +366,21 @@ final class AppIntegrationTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testContentViewInitializationPerformance() {
         measure {
             _ = ContentView()
         }
     }
 
+    @MainActor
     func testChatViewInitializationPerformance() {
         measure {
             _ = ChatView(apiKey: "test-key")
         }
     }
 
+    @MainActor
     func testSettingsViewInitializationPerformance() {
         measure {
             _ = SettingsView()
@@ -380,6 +389,7 @@ final class AppIntegrationTests: XCTestCase {
 
     // MARK: - Memory Management Tests
 
+    @MainActor
     func testMemoryManagement() {
         // Given
         let mockKeychain = MockKeychainHelper()
@@ -407,7 +417,7 @@ final class AppIntegrationTests: XCTestCase {
 
         // When
         for i in 0..<10 {
-            DispatchQueue.global().async {
+            Task { @MainActor in
                 let mockKeychain = MockKeychainHelper()
                 mockKeychain.isBiometricAvailable = false // Disable biometric to avoid prompts
                 _ = ContentView(keychain: mockKeychain)

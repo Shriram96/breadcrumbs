@@ -10,7 +10,7 @@ import Combine
 import XCTest
 
 @MainActor
-final class ChatViewModelTests: XCTestCase {
+final class ChatViewModelTests: XCTestCase, @unchecked Sendable {
     var viewModel: ChatViewModel!
     var mockAIModel: MockAIModel!
     var mockToolRegistry: MockToolRegistry!
@@ -28,7 +28,9 @@ final class ChatViewModelTests: XCTestCase {
         mockAIModel?.reset()
         mockToolRegistry?.reset()
 
-        // Let XCTest handle the cleanup automatically to avoid @MainActor deallocation issues
+        viewModel = nil
+        mockAIModel = nil
+        mockToolRegistry = nil
     }
 
     // MARK: - Initialization Tests
@@ -59,8 +61,8 @@ final class ChatViewModelTests: XCTestCase {
 
         // When
         do {
-            try await TestUtilities.withTimeout(seconds: 5) { [self] in
-                await viewModel.sendMessage(userMessage)
+            try await TestUtilities.withTimeout(seconds: 5) {
+                await self.viewModel.sendMessage(userMessage)
             }
         } catch {
             XCTFail("Test timed out: \(error)")
@@ -85,8 +87,8 @@ final class ChatViewModelTests: XCTestCase {
 
         // When
         do {
-            try await TestUtilities.withTimeout(seconds: 5) { [self] in
-                await viewModel.sendMessage(emptyMessage)
+            try await TestUtilities.withTimeout(seconds: 5) {
+                await self.viewModel.sendMessage(emptyMessage)
             }
         } catch {
             XCTFail("Test timed out: \(error)")
@@ -104,8 +106,8 @@ final class ChatViewModelTests: XCTestCase {
 
         // When
         do {
-            try await TestUtilities.withTimeout(seconds: 5) { [self] in
-                await viewModel.sendMessage(whitespaceMessage)
+            try await TestUtilities.withTimeout(seconds: 5) {
+                await self.viewModel.sendMessage(whitespaceMessage)
             }
         } catch {
             XCTFail("Test timed out: \(error)")
@@ -124,8 +126,8 @@ final class ChatViewModelTests: XCTestCase {
 
         // When
         do {
-            try await TestUtilities.withTimeout(seconds: 5) { [self] in
-                await viewModel.sendMessage(userMessage)
+            try await TestUtilities.withTimeout(seconds: 5) {
+                await self.viewModel.sendMessage(userMessage)
             }
         } catch {
             XCTFail("Test timed out: \(error)")
@@ -164,8 +166,8 @@ final class ChatViewModelTests: XCTestCase {
 
         // When
         do {
-            try await TestUtilities.withTimeout(seconds: 5) { [self] in
-                await viewModel.sendMessage(userMessage)
+            try await TestUtilities.withTimeout(seconds: 5) {
+                await self.viewModel.sendMessage(userMessage)
             }
         } catch {
             XCTFail("Test timed out: \(error)")
@@ -206,8 +208,8 @@ final class ChatViewModelTests: XCTestCase {
 
         // When
         do {
-            try await TestUtilities.withTimeout(seconds: 5) { [self] in
-                await viewModel.sendMessage(userMessage)
+            try await TestUtilities.withTimeout(seconds: 5) {
+                await self.viewModel.sendMessage(userMessage)
             }
         } catch {
             XCTFail("Test timed out: \(error)")
@@ -244,8 +246,8 @@ final class ChatViewModelTests: XCTestCase {
 
         // When
         do {
-            try await TestUtilities.withTimeout(seconds: 5) { [self] in
-                await viewModel.sendMessage(userMessage)
+            try await TestUtilities.withTimeout(seconds: 5) {
+                await self.viewModel.sendMessage(userMessage)
             }
         } catch {
             XCTFail("Test timed out: \(error)")
@@ -342,8 +344,8 @@ final class ChatViewModelTests: XCTestCase {
 
         // When
         do {
-            try await TestUtilities.withTimeout(seconds: 5) { [self] in
-                await viewModel.sendMessage(userMessage)
+            try await TestUtilities.withTimeout(seconds: 5) {
+                await self.viewModel.sendMessage(userMessage)
             }
         } catch {
             XCTFail("Test timed out: \(error)")
@@ -364,8 +366,8 @@ final class ChatViewModelTests: XCTestCase {
 
         // When
         do {
-            try await TestUtilities.withTimeout(seconds: 5) { [self] in
-                await viewModel.sendMessage("Test message")
+            try await TestUtilities.withTimeout(seconds: 5) {
+                await self.viewModel.sendMessage("Test message")
             }
         } catch {
             XCTFail("Test timed out: \(error)")
@@ -384,8 +386,8 @@ final class ChatViewModelTests: XCTestCase {
 
         // When
         do {
-            try await TestUtilities.withTimeout(seconds: 5) { [self] in
-                await viewModel.sendMessage("New message")
+            try await TestUtilities.withTimeout(seconds: 5) {
+                await self.viewModel.sendMessage("New message")
             }
         } catch {
             XCTFail("Test timed out: \(error)")
@@ -416,8 +418,8 @@ final class ChatViewModelTests: XCTestCase {
 
         // When
         do {
-            try await TestUtilities.withTimeout(seconds: 5) { [self] in
-                await viewModel.sendMessage(userMessage)
+            try await TestUtilities.withTimeout(seconds: 5) {
+                await self.viewModel.sendMessage(userMessage)
             }
         } catch {
             XCTFail("Test timed out: \(error)")

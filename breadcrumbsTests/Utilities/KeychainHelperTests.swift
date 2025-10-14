@@ -9,6 +9,7 @@
 import LocalAuthentication
 import XCTest
 
+@MainActor
 final class KeychainHelperTests: XCTestCase {
     var keychainHelper: KeychainHelper!
     var mockKeychainHelper: MockKeychainHelper!
@@ -390,6 +391,7 @@ final class KeychainHelperTests: XCTestCase {
 
     // MARK: - Performance Tests
 
+    @MainActor
     func testSavePerformance() {
         measure {
             let key = "performance_test_key"
@@ -402,6 +404,7 @@ final class KeychainHelperTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testGetPerformance() {
         // Given
         let key = "performance_get_key"
