@@ -34,7 +34,6 @@ final class breadcrumbsTests: XCTestCase {
     func testContentViewInitialization() {
         // Test that ContentView can be initialized without crashing
         let mockKeychain = MockKeychainHelper()
-        mockKeychain.isBiometricAvailable = false // Disable biometric to avoid prompts
         let contentView = ContentView(keychain: mockKeychain)
         XCTAssertNotNil(contentView)
     }
@@ -50,7 +49,6 @@ final class breadcrumbsTests: XCTestCase {
     func testSettingsViewInitialization() {
         // Test that SettingsView can be initialized without crashing
         let mockKeychain = MockKeychainHelper()
-        mockKeychain.isBiometricAvailable = false // Disable biometric to avoid prompts
         let settingsView = SettingsView(keychain: mockKeychain)
         XCTAssertNotNil(settingsView)
     }

@@ -74,7 +74,6 @@ final class AppIntegrationTests: XCTestCase {
     func testContentViewInitialization() {
         // Given & When
         let mockKeychain = MockKeychainHelper()
-        mockKeychain.isBiometricAvailable = false // Disable biometric to avoid prompts
         let contentView = ContentView(keychain: mockKeychain)
 
         // Then
@@ -139,7 +138,6 @@ final class AppIntegrationTests: XCTestCase {
         #if !UNIT_TESTS
             /// Given & When
             let mockKeychain = MockKeychainHelper()
-            mockKeychain.isBiometricAvailable = false // Disable biometric to avoid prompts
             let settingsView = SettingsView(keychain: mockKeychain)
 
             // Then
@@ -193,7 +191,6 @@ final class AppIntegrationTests: XCTestCase {
     func testKeychainHelperIntegration() {
         // Given
         let mockKeychain = MockKeychainHelper()
-        mockKeychain.isBiometricAvailable = false // Disable biometric to avoid prompts
         let testKey = "integration_test_key"
         let testValue = "integration_test_value"
 
@@ -210,28 +207,7 @@ final class AppIntegrationTests: XCTestCase {
         XCTAssertTrue(deleteResult)
     }
 
-    @MainActor
-    func testKeychainHelperWithBiometricIntegration() {
-        // Given
-        let mockKeychain = MockKeychainHelper()
-        mockKeychain.isBiometricAvailable = true // Enable biometric for this test
-        mockKeychain.biometricType = "Touch ID"
-        let testKey = "biometric_integration_test_key"
-        let testValue = "biometric_integration_test_value"
-
-        // When
-        let saveResult = mockKeychain.save(testValue, forKey: testKey, requireBiometric: true)
-        let biometricAvailable = mockKeychain.isBiometricAuthenticationAvailable()
-        let biometricType = mockKeychain.getBiometricType()
-
-        // Clean up
-        mockKeychain.delete(forKey: testKey)
-
-        // Then
-        XCTAssertTrue(saveResult)
-        XCTAssertTrue(biometricAvailable)
-        XCTAssertEqual(biometricType, "Touch ID")
-    }
+    // Biometric authentication removed - test removed
 
     // MARK: - Logger Integration Tests
 
@@ -393,7 +369,6 @@ final class AppIntegrationTests: XCTestCase {
     func testMemoryManagement() {
         // Given
         let mockKeychain = MockKeychainHelper()
-        mockKeychain.isBiometricAvailable = false // Disable biometric to avoid prompts
         // Note: breadcrumbsApp is excluded from library target
         var contentView: ContentView? = ContentView(keychain: mockKeychain)
         var chatView: ChatView? = ChatView(apiKey: "test-key")
@@ -419,7 +394,6 @@ final class AppIntegrationTests: XCTestCase {
         for i in 0..<10 {
             Task { @MainActor in
                 let mockKeychain = MockKeychainHelper()
-                mockKeychain.isBiometricAvailable = false // Disable biometric to avoid prompts
                 _ = ContentView(keychain: mockKeychain)
                 _ = ChatView(apiKey: "test-key-\(i)")
                 _ = SettingsView(keychain: mockKeychain)

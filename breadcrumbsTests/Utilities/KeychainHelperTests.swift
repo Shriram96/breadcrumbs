@@ -6,7 +6,6 @@
 //
 
 @testable import breadcrumbs
-import LocalAuthentication
 import XCTest
 
 @MainActor
@@ -54,24 +53,7 @@ final class KeychainHelperTests: XCTestCase {
         mockKeychainHelper.delete(forKey: key)
     }
 
-    func testSaveWithBiometric() {
-        // Given
-        let key = "test_biometric_key"
-        let value = "test_biometric_value"
-
-        // When
-        let result = mockKeychainHelper.save(value, forKey: key, requireBiometric: true)
-
-        // Then
-        XCTAssertTrue(result)
-        XCTAssertEqual(mockKeychainHelper.saveCallCount, 1)
-        XCTAssertEqual(mockKeychainHelper.lastSaveKey, key)
-        XCTAssertEqual(mockKeychainHelper.lastSaveValue, value)
-        XCTAssertEqual(mockKeychainHelper.lastSaveRequireBiometric, true)
-
-        // Clean up
-        mockKeychainHelper.delete(forKey: key)
-    }
+    // Biometric authentication removed - test removed
 
     func testSaveEmptyString() {
         // Given
@@ -117,22 +99,7 @@ final class KeychainHelperTests: XCTestCase {
         XCTAssertNil(retrievedValue)
     }
 
-    func testGetWithPrompt() {
-        // Given
-        let key = "test_prompt_key"
-        let value = "test_prompt_value"
-        let prompt = "Test prompt"
-        mockKeychainHelper.save(value, forKey: key)
-
-        // When
-        let retrievedValue = mockKeychainHelper.get(forKey: key, prompt: prompt)
-
-        // Then
-        XCTAssertEqual(retrievedValue, value)
-
-        // Clean up
-        mockKeychainHelper.delete(forKey: key)
-    }
+    // Biometric prompt removed - test removed
 
     // MARK: - Delete Tests
 
@@ -226,109 +193,7 @@ final class KeychainHelperTests: XCTestCase {
         mockKeychainHelper.delete(forKey: key)
     }
 
-    func testUpdateWithBiometric() {
-        // Given
-        let key = "test_biometric_update_key"
-        let value = "biometric_update_value"
-
-        // When
-        let result = mockKeychainHelper.update(value, forKey: key, requireBiometric: true)
-
-        // Then
-        // Note: This might fail in test environment if biometric authentication is not available
-        XCTAssertTrue(result == true || result == false)
-
-        // Clean up
-        mockKeychainHelper.delete(forKey: key)
-    }
-
-    // MARK: - Biometric Authentication Tests
-
-    func testIsBiometricAuthenticationAvailable() {
-        // When
-        let isAvailable = mockKeychainHelper.isBiometricAuthenticationAvailable()
-
-        // Then
-        // This will depend on the test environment
-        XCTAssertTrue(isAvailable == true || isAvailable == false)
-    }
-
-    func testGetBiometricType() {
-        // When
-        let biometricType = mockKeychainHelper.getBiometricType()
-
-        // Then
-        XCTAssertFalse(biometricType.isEmpty)
-        XCTAssertTrue(["Touch ID", "Face ID", "Optic ID", "None", "Not Available"].contains(biometricType))
-    }
-
-    func testAuthenticateWithBiometrics() {
-        // Given
-        let expectation = XCTestExpectation(description: "Biometric authentication")
-        let reason = "Test biometric authentication"
-
-        // When
-        mockKeychainHelper.authenticateWithBiometrics(reason: reason) { success, error in
-            // Then
-            // The result will depend on the test environment
-            XCTAssertTrue(success == true || success == false)
-            expectation.fulfill()
-        }
-
-        // Wait for completion
-        wait(for: [expectation], timeout: 5.0)
-    }
-
-    // MARK: - Convenience Methods Tests
-
-    func testSaveWithBiometricConvenience() {
-        // Given
-        let key = "test_convenience_biometric_key"
-        let value = "convenience_biometric_value"
-
-        // When
-        let result = mockKeychainHelper.saveWithBiometric(value, forKey: key)
-
-        // Then
-        // Note: This might fail in test environment if biometric authentication is not available
-        XCTAssertTrue(result == true || result == false)
-
-        // Clean up
-        mockKeychainHelper.delete(forKey: key)
-    }
-
-    func testGetWithBiometricConvenience() {
-        // Given
-        let key = "test_convenience_get_key"
-        let value = "convenience_get_value"
-        let reason = "Test convenience get"
-        mockKeychainHelper.save(value, forKey: key)
-
-        // When
-        let retrievedValue = mockKeychainHelper.getWithBiometric(forKey: key, reason: reason)
-
-        // Then
-        XCTAssertEqual(retrievedValue, value)
-
-        // Clean up
-        mockKeychainHelper.delete(forKey: key)
-    }
-
-    func testUpdateWithBiometricConvenience() {
-        // Given
-        let key = "test_convenience_update_key"
-        let value = "convenience_update_value"
-
-        // When
-        let result = mockKeychainHelper.updateWithBiometric(value, forKey: key)
-
-        // Then
-        // Note: This might fail in test environment if biometric authentication is not available
-        XCTAssertTrue(result == true || result == false)
-
-        // Clean up
-        mockKeychainHelper.delete(forKey: key)
-    }
+    // Biometric authentication removed - all biometric tests removed
 
     // MARK: - Convenience Keys Tests
 

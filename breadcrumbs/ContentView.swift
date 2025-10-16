@@ -26,17 +26,7 @@ struct ContentView: View {
 
     var body: some View {
         VStack {
-            if isAuthenticating {
-                // Show authentication loading state
-                VStack(spacing: 16) {
-                    ProgressView()
-                        .scaleEffect(1.2)
-                    Text("Authenticating with Touch ID/Face ID...")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let key = apiKey, !key.isEmpty {
+            if let key = apiKey, !key.isEmpty {
                 // Show chat interface
                 ChatView(apiKey: key)
             } else {
@@ -68,40 +58,11 @@ struct ContentView: View {
 
     @State private var showingSettings = false
     @State private var apiKey: String?
-    @State private var isAuthenticating = false
-    @State private var authenticationError: String?
 
     private let keychain: KeychainProtocol
 
     private func loadAPIKey() {
-        // Check if biometric authentication is available
-        if keychain.isBiometricAuthenticationAvailable() {
-            // Use biometric authentication
-            isAuthenticating = true
-            authenticationError = nil
-
-            keychain.authenticateWithBiometrics(reason: "Access your stored API key") { [self] success, error in
-                DispatchQueue.main.async {
-                    isAuthenticating = false
-
-                    if success {
-                        // Authentication successful, get the API key
-                        apiKey = keychain.get(forKey: KeychainHelper.openAIAPIKey, prompt: "Access your API key")
-                    } else {
-                        // Authentication failed
-                        if let error = error {
-                            authenticationError = "Authentication failed: \(error.localizedDescription)"
-                        } else {
-                            authenticationError = "Authentication was cancelled"
-                        }
-                        apiKey = nil
-                    }
-                }
-            }
-        } else {
-            // Fallback to regular keychain access
-            apiKey = keychain.get(forKey: KeychainHelper.openAIAPIKey)
-        }
+        apiKey = keychain.get(forKey: KeychainHelper.openAIAPIKey)
     }
 }
 
