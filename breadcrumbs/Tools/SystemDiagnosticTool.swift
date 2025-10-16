@@ -577,8 +577,24 @@ final class SystemDiagnosticTool: AITool {
     // MARK: - Private Methods
 
     private func parseInput(from arguments: [String: Any]) throws -> SystemDiagnosticInput {
+        // Handle empty arguments case
+        if arguments.isEmpty {
+            return SystemDiagnosticInput(
+                appName: nil,
+                bundleIdentifier: nil,
+                diagnosticType: nil,
+                timeRangeHours: nil,
+                includeSystemReports: nil,
+                includeUserReports: nil,
+                collectAppSamples: nil,
+                maxReportsPerType: nil
+            )
+        }
+
         let data = try JSONSerialization.data(withJSONObject: arguments)
-        return try JSONDecoder().decode(SystemDiagnosticInput.self, from: data)
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(SystemDiagnosticInput.self, from: data)
     }
 
     private func collectSystemInformation() async throws -> SystemInformation {
