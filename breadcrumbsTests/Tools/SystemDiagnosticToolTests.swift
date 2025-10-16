@@ -88,8 +88,8 @@ final class SystemDiagnosticToolTests: XCTestCase {
             _ = try await tool.execute(arguments: arguments)
             XCTFail("Should have thrown an error for invalid diagnostic type")
         } catch {
-            // Expected behavior - tool should throw an error for invalid enum values
-            XCTAssertTrue(error is DecodingError || error is ToolError)
+            // Expected behavior - tool should throw a DecodingError for invalid enum values
+            XCTAssertTrue(error is DecodingError, "Expected DecodingError but got: \(type(of: error))")
         }
     }
 

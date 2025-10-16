@@ -178,61 +178,75 @@ struct AppCheckerOutput: ToolOutput {
         if apps.isEmpty {
             result += "No apps found matching the criteria.\n"
         } else {
+            // Use concise format if listing many apps (>20)
+            let useCompactFormat = apps.count > 20
+
             result += "Apps Found:\n"
             result += String(repeating: "=", count: 50) + "\n"
 
-            for (index, app) in apps.enumerated() {
-                result += "\n\(index + 1). \(app.name)\n"
-                result += "   Bundle ID: \(app.bundleIdentifier)\n"
-                result += "   Version: \(app.version ?? "Unknown")\n"
-                result += "   Path: \(app.bundlePath)\n"
-                result += "   Running: \(app.isRunning ? "Yes" : "No")\n"
-
-                if let launchDate = app.launchDate {
-                    result += "   Launch Date: \(formatDate(launchDate))\n"
+            if useCompactFormat {
+                // Compact format: one line per app
+                result += "\n(Showing \(apps.count) apps in compact format)\n\n"
+                for (index, app) in apps.enumerated() {
+                    let runningIndicator = app.isRunning ? " [RUNNING]" : ""
+                    let categoryInfo = app.category.map { " (\($0))" } ?? ""
+                    result += "\(index + 1). \(app.name) - v\(app.version ?? "?") - \(app.bundleIdentifier)\(categoryInfo)\(runningIndicator)\n"
                 }
+            } else {
+                // Detailed format for fewer apps
+                for (index, app) in apps.enumerated() {
+                    result += "\n\(index + 1). \(app.name)\n"
+                    result += "   Bundle ID: \(app.bundleIdentifier)\n"
+                    result += "   Version: \(app.version ?? "Unknown")\n"
+                    result += "   Path: \(app.bundlePath)\n"
+                    result += "   Running: \(app.isRunning ? "Yes" : "No")\n"
 
-                if let installDate = app.installDate {
-                    result += "   Install Date: \(formatDate(installDate))\n"
-                }
-
-                if let lastOpened = app.lastOpenedDate {
-                    result += "   Last Opened: \(formatDate(lastOpened))\n"
-                }
-
-                if app.isSystemApp {
-                    result += "   Type: System App\n"
-                }
-
-                if app.isLaunchAgent {
-                    result += "   Launch Agent: Yes\n"
-                }
-
-                if app.isLaunchDaemon {
-                    result += "   Launch Daemon: Yes\n"
-                }
-
-                if app.isBackgroundAgent {
-                    result += "   Background Agent: Yes\n"
-                }
-
-                if let codeSigning = app.codeSigningInfo {
-                    result += "   Code Signed: \(codeSigning.isSigned ? "Yes" : "No")\n"
-                    if let identity = codeSigning.signingIdentity {
-                        result += "   Signing Identity: \(identity)\n"
+                    if let launchDate = app.launchDate {
+                        result += "   Launch Date: \(formatDate(launchDate))\n"
                     }
-                }
 
-                if let appStore = app.appStoreInfo, appStore.isAppStoreApp {
-                    result += "   App Store: Yes\n"
-                }
+                    if let installDate = app.installDate {
+                        result += "   Install Date: \(formatDate(installDate))\n"
+                    }
 
-                if let category = app.category {
-                    result += "   Category: \(category)\n"
-                }
+                    if let lastOpened = app.lastOpenedDate {
+                        result += "   Last Opened: \(formatDate(lastOpened))\n"
+                    }
 
-                if let developer = app.developer {
-                    result += "   Developer: \(developer)\n"
+                    if app.isSystemApp {
+                        result += "   Type: System App\n"
+                    }
+
+                    if app.isLaunchAgent {
+                        result += "   Launch Agent: Yes\n"
+                    }
+
+                    if app.isLaunchDaemon {
+                        result += "   Launch Daemon: Yes\n"
+                    }
+
+                    if app.isBackgroundAgent {
+                        result += "   Background Agent: Yes\n"
+                    }
+
+                    if let codeSigning = app.codeSigningInfo {
+                        result += "   Code Signed: \(codeSigning.isSigned ? "Yes" : "No")\n"
+                        if let identity = codeSigning.signingIdentity {
+                            result += "   Signing Identity: \(identity)\n"
+                        }
+                    }
+
+                    if let appStore = app.appStoreInfo, appStore.isAppStoreApp {
+                        result += "   App Store: Yes\n"
+                    }
+
+                    if let category = app.category {
+                        result += "   Category: \(category)\n"
+                    }
+
+                    if let developer = app.developer {
+                        result += "   Developer: \(developer)\n"
+                    }
                 }
             }
         }
@@ -309,7 +323,13 @@ struct AppCheckerTool: AITool {
     "What version of Chrome is installed?", "Show me all my productivity apps", \
     "What apps are currently running?", or "Find apps by developer". \
     The tool provides detailed information including bundle identifiers, versions, \
-    installation dates, running status, code signing, and more.
+    installation dates, running status, code signing, and more. \
+    \
+    IMPORTANT: When no specific app name or filter is provided, this tool will return a comprehensive \
+    list of ALL installed applications on the system (up to max_results limit). This gives you a complete \
+    inventory of what's installed, which is very helpful for answering questions about available software. \
+    For example, if a user asks "what apps do I have?" or "what's installed?", call this with no parameters \
+    to get the full list.
     """
 
     var parametersSchema: ToolParameterSchema {
@@ -385,13 +405,21 @@ struct AppCheckerTool: AITool {
     // MARK: - Private Methods
 
     func parseInput(from arguments: [String: Any]) -> AppCheckerInput {
+        // If no filters are specified, increase default max results to show more apps
+        let hasFilters = arguments["app_name"] != nil ||
+                        arguments["bundle_identifier"] != nil ||
+                        arguments["category"] != nil ||
+                        arguments["running_apps_only"] as? Bool == true
+
+        let defaultMaxResults = hasFilters ? 100 : 200  // Show more apps when listing all
+
         return AppCheckerInput(
             appName: arguments["app_name"] as? String,
             bundleIdentifier: arguments["bundle_identifier"] as? String,
             category: arguments["category"] as? String,
             includeSystemApps: arguments["include_system_apps"] as? Bool ?? false,
             runningAppsOnly: arguments["running_apps_only"] as? Bool ?? false,
-            maxResults: arguments["max_results"] as? Int ?? 100
+            maxResults: arguments["max_results"] as? Int ?? defaultMaxResults
         )
     }
 

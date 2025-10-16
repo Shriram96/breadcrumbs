@@ -94,7 +94,8 @@ final class AppCheckerToolTests: XCTestCase {
         XCTAssertNil(input.category)
         XCTAssertFalse(input.includeSystemApps ?? true)
         XCTAssertFalse(input.runningAppsOnly ?? true)
-        XCTAssertEqual(input.maxResults, 100)
+        // When no filters are provided, default is now 200
+        XCTAssertEqual(input.maxResults, 200)
     }
 
     func testParseInputWithPartialParameters() {
